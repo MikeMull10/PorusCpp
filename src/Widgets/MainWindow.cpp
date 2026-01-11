@@ -6,14 +6,14 @@
 #include <QStyle>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
-    setWindowTitle("Qt 6 C++ App");
+    setWindowTitle("PORUS X");
     resize(800, 600);
     showMaximized();
 
     QWidget* centralWidget = new QWidget(this);
     QVBoxLayout* layout = new QVBoxLayout(centralWidget);
 
-    TitleLabel *title = new TitleLabel("This is a Title!", false);
+    TitleLabel *title = new TitleLabel("This is a Title!", true);
     layout->addWidget(title);
     ToolButton *button = new ToolButton(style()->standardIcon(QStyle::SP_DialogCloseButton), this);
     layout->addWidget(button);
