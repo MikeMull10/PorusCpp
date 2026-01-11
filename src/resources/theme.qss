@@ -1,0 +1,12 @@
+#TitleLabel {
+    font-size: 24pt;
+    font-weight: bold;
+}
+
+#TitleLabel[active="true"] {
+    color: --primary;
+}
+
+#TitleLabel[active="false"] {
+    color: blue;
+}

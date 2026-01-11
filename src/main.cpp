@@ -5,6 +5,7 @@
 #include <QStatusBar>
 #include <QTextEdit>
 #include <QDockWidget>
+#include <QFile>
 #include "Widgets/MainWindow.h"
 #include "Widgets/PushButton.h"
 
@@ -15,7 +16,7 @@ int main(int argc, char **argv)
     MainWindow mainWindow;
     mainWindow.show();
 
-    app.setStyleSheet("#TitleLabel[active=\"true\"] { color: red; } #TitleLabel[active=\"false\"] { color: blue; }");
+    app.setWindowIcon(QIcon(":logo.png"));
 
     return app.exec();
 }

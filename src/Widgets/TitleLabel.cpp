@@ -5,11 +5,6 @@ TitleLabel::TitleLabel(const QString& text, bool clickable, QWidget* parent) : Q
     setObjectName("TitleLabel");
     setProperty("active", this->active);
 
-    QFont currentFont = this->font();
-    currentFont.setPointSize(24);
-    currentFont.setBold(true);
-    this->setFont(currentFont);
-
     this->clickable = clickable;
 
     if (this->clickable) {
