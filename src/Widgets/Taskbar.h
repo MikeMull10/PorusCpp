@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include <QVBoxLayout>
+#include <QPropertyAnimation>
 #include "TaskButton.h"
 
 class Taskbar : public QWidget {
@@ -12,6 +13,8 @@ class Taskbar : public QWidget {
 
     TaskButton* menuBtn;
     bool extended{ true };
+
+    QPropertyAnimation* widthAnimation = nullptr;
 
 public:
     explicit Taskbar(QWidget* parent = nullptr);

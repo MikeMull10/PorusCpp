@@ -29,11 +29,23 @@ Taskbar::Taskbar(QWidget* parent) : QWidget(parent) {
     TaskButton *settings = new TaskButton(QIcon(":/icons/setting-white.svg"), "Settings", this);
     this->bottom->addWidget(settings);
 
+    widthAnimation = new QPropertyAnimation(this, "maximumWidth");
+    widthAnimation->setDuration(200);
+    widthAnimation->setEasingCurve(QEasingCurve::InOutQuad);
+
     this->updateWidth();
 }
 
 void Taskbar::updateWidth() {
-    this->setFixedWidth(this->extended ? 250 : 40);  // 40 = icon size (36) + 2 * margin size (2)
+    int targetWidth = this->extended ? 250 : 40;  // 40 = icon size (36) + 2 * margin size (2)
+    widthAnimation->stop();
+    widthAnimation->setStartValue(this->width());
+    widthAnimation->setEndValue(targetWidth);
+    disconnect(widthAnimation, &QPropertyAnimation::finished, this, nullptr);
+    connect(widthAnimation, &QPropertyAnimation::finished, this, [this, targetWidth]() {
+        this->setFixedWidth(targetWidth);
+    });
+    widthAnimation->start();
 
     for (int a = 0; a < 2; a++) {
         QVBoxLayout *lay = (a == 0) ? this->top : this->bottom;
