@@ -2,5 +2,9 @@
     <qresource prefix="/">
         <file>theme.qss</file>
         <file>logo.png</file>
+        <file>icons/menu-black.svg</file>
+        <file>icons/menu-white.svg</file>
+        <file>icons/setting-black.svg</file>
+        <file>icons/setting-white.svg</file>
     </qresource>
 </RCC>
