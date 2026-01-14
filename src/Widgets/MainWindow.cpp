@@ -2,12 +2,15 @@
 #include "ToolButton.h"
 #include "TitleLabel.h"
 #include "Taskbar.h"
+#include "ImagePopup.h"
 
 #include <QVBoxLayout>
 #include <QIcon>
 #include <QStyle>
 #include <QFile>
 #include <QApplication>
+#include <QFileDialog>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle("PORUS X");
@@ -27,8 +30,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     Taskbar* taskBar = new Taskbar(this);
     this->mainLayout->addWidget(taskBar);
 
+    TaskButton* openFileBtn = new TaskButton(QIcon(":/icons/open-file-white.svg"), "Open File", taskBar);
+    taskBar->addTaskButton(openFileBtn);
+    connect(openFileBtn, &TaskButton::clicked, this, [this]() { this->openFile(); });
+
     // Main content area on the right
     this->main = new QStackedWidget(centralWidget);
+    this->importPage = new ImportPage(this);
+    this->main->addWidget(this->importPage);
+    this->main->setCurrentWidget(this->importPage);
     
     this->mainLayout->addWidget(this->main);
     
@@ -56,4 +66,26 @@ void MainWindow::initSettings() {
 void MainWindow::closeEvent(QCloseEvent* event) {
     // saveSettings();
     QMainWindow::closeEvent(event);
+}
+
+void MainWindow::openFile() {
+    QString fileName = QFileDialog::getOpenFileName(
+        this, "Open Image", "", "Images (*.png *.jpg *.jpeg *.bmp)" 
+    );
+
+    if (fileName.isEmpty()) return;
+
+    switch (this->main->currentIndex()) {
+        case 0:  // Import Page
+            try {
+                ImagePopup* pop = new ImagePopup(fileName, this);
+                pop->exec();
+            } catch (const std::exception& e) {
+                QMessageBox::critical(this, "Error", QString("Failed to load image: %1").arg(e.what()));
+            } catch (...) {
+                QMessageBox::critical(this, "Error", 
+                    "An unknown error occurred while loading the image");
+            }
+            break;
+    }
 }

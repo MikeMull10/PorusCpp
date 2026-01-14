@@ -5,6 +5,11 @@
 #include <QPropertyAnimation>
 #include "TaskButton.h"
 
+enum POSITION {
+    TOP,
+    BOTTOM
+};
+
 class Taskbar : public QWidget {
     Q_OBJECT
     QVBoxLayout* layout;
@@ -20,4 +25,5 @@ public:
     explicit Taskbar(QWidget* parent = nullptr);
 
     void updateWidth();
+    void addTaskButton(TaskButton* btn, POSITION pos = TOP);
 };

@@ -20,21 +20,18 @@
     color: blue;
 }
 
-.TaskButton ToolButton {
-    background-color: transparent;
-    border: none;
+#Taskbar > QWidget {
+    margin-left: 10px;
 }
 
-#TaskButtonLabel {
-    background-color: transparent;
-    font-size: 10pt;
-    font-weight: none;
+QPushButton#TaskButton {
+   background-color: transparent;
+   border-left: 2px solid transparent;
+   border-radius: 8px;
+   padding: 8px;
+   text-align: left;
 }
 
-.Taskbar > QWidget:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-}
-
-.Taskbar > QWidget {
-    border-radius: 8px;
+QPushButton#TaskButton:hover {
+   background-color: rgba(255, 255, 255, 0.15);
 }

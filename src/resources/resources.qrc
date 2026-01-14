@@ -6,5 +6,7 @@
         <file>icons/menu-white.svg</file>
         <file>icons/setting-black.svg</file>
         <file>icons/setting-white.svg</file>
+        <file>icons/open-file-black.svg</file>
+        <file>icons/open-file-white.svg</file>
     </qresource>
 </RCC>

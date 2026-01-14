@@ -5,6 +5,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 qt_standard_project_setup()
@@ -12,7 +16,11 @@ qt_standard_project_setup()
 file(GLOB_RECURSE SRC_FILES
     CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/*.h"
     "${CMAKE_SOURCE_DIR}/src/Widgets/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/Widgets/*.h"
+    "${CMAKE_SOURCE_DIR}/src/Pages/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/Pages/*.h"
 )
 
 qt_add_resources(RESOURCE_FILES src/resources/resources.qrc)
@@ -29,5 +37,6 @@ target_link_libraries(PorusCpp
 target_include_directories(PorusCpp PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/Widgets
+    ${CMAKE_SOURCE_DIR}/src/Pages
     ${CMAKE_SOURCE_DIR}/src/resources
 )

@@ -1,15 +1,22 @@
 #include "Taskbar.h"
 #include "ToolButton.h"
+#include <QPushButton>
 
 Taskbar::Taskbar(QWidget* parent) : QWidget(parent) {
     this->setObjectName("Taskbar");
     this->setProperty("class", "Taskbar");
+
+    // this->setStyleSheet(
+    //     "QWidget#TaskbarSection { background-color: rgba(255, 255, 255, 0.15); }"
+    // );
 
     this->layout = new QVBoxLayout(this);
     this->layout->setContentsMargins(0, 0, 0, 0);
 
     QWidget *topWrapper = new QWidget(this);
     QWidget *bottomWrapper = new QWidget(this);
+    topWrapper->setObjectName("TaskbarSection");
+    bottomWrapper->setObjectName("TaskbarSection");
     this->top = new QVBoxLayout(topWrapper);
     this->bottom = new QVBoxLayout(bottomWrapper);
     this->top->setContentsMargins(0, 0, 0, 0);
@@ -58,4 +65,12 @@ void Taskbar::updateWidth() {
             if (bar) bar->setVisibility(this->extended);
         }
     }
+}
+
+void Taskbar::addTaskButton(TaskButton* btn, POSITION pos) {
+    if (pos == TOP) {
+        this->top->addWidget(btn);
+        return;
+    }
+    this->bottom->addWidget(btn);
 }
