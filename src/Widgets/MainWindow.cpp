@@ -4,6 +4,7 @@
 #include "Taskbar.h"
 #include "ImagePopup.h"
 
+#include <QShortcut>
 #include <QVBoxLayout>
 #include <QIcon>
 #include <QStyle>
@@ -44,6 +45,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     
     setCentralWidget(centralWidget);
     this->updateStylesheet();
+
+    // --- Keybinds ---
+    QShortcut* quitShortcut = new QShortcut(QKeySequence("Ctrl+Q"), this);
+    quitShortcut->setContext(Qt::ApplicationShortcut);
+    connect(quitShortcut, &QShortcut::activated, this, &MainWindow::close);
+    QShortcut* openShortcut = new QShortcut(QKeySequence("Ctrl+O"), this);
+    connect(openShortcut, &QShortcut::activated, this, &MainWindow::openFile);
 }
 
 void MainWindow::updateStylesheet() {

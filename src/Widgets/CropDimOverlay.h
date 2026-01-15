@@ -34,4 +34,6 @@ public:
         p->setBrush(QColor(0, 0, 0, 120));
         p->drawPath(dimmed);
     }
+
+    QRectF getCropRect() { return this->cropRect; }
 };

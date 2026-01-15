@@ -1,4 +1,5 @@
 #include "ImageToolbar.h"
+#include <QShortcut>
 
 #include <unordered_map>
 
@@ -20,22 +21,34 @@ ImageToolbar::ImageToolbar(const QVector<TOOL>& enabled, QWidget* parent) : QWid
 
     this->handBtn = new ToolButton(QIcon(":/icons/hand-white.svg"), this);
     this->handBtn->setProperty("tool", "HAND");
+    this->handBtn->setToolTip("Hand Tool (H)");
     this->zoomBtn = new ToolButton(QIcon(":/icons/zoom-white.svg"), this);
     this->zoomBtn->setProperty("tool", "ZOOM");
+    this->zoomBtn->setToolTip("Zoom (Z)");
     this->cropBtn = new ToolButton(QIcon(":/icons/crop-white.svg"), this);
     this->cropBtn->setProperty("tool", "CROP");
+    this->cropBtn->setToolTip("Crop (C)");
     this->scaleBtn = new ToolButton(QIcon(":/icons/ruler-white.svg"), this);
     this->scaleBtn->setProperty("tool", "SCALE");
+    this->scaleBtn->setToolTip("Set Scale (R)");
     
     for (TOOL tool : enabled) {
         if (tool == TOOL::HAND) {
             this->layout->addWidget(this->handBtn);
+            QShortcut* shortcut = new QShortcut(QKeySequence(Qt::Key_H), this);
+            connect(shortcut, &QShortcut::activated, this, [this]() { handleClick(this->handBtn); });
         } else if (tool == TOOL::ZOOM) {
             this->layout->addWidget(this->zoomBtn);
+            QShortcut* shortcut = new QShortcut(QKeySequence(Qt::Key_Z), this);
+            connect(shortcut, &QShortcut::activated, this, [this]() { handleClick(this->zoomBtn); });
         } else if (tool == TOOL::CROP) {
             this->layout->addWidget(this->cropBtn);
+            QShortcut* shortcut = new QShortcut(QKeySequence(Qt::Key_C), this);
+            connect(shortcut, &QShortcut::activated, this, [this]() { handleClick(this->cropBtn); });
         } else if (tool == TOOL::SCALE) {
             this->layout->addWidget(this->scaleBtn);
+            QShortcut* shortcut = new QShortcut(QKeySequence(Qt::Key_R), this);
+            connect(shortcut, &QShortcut::activated, this, [this]() { handleClick(this->scaleBtn); });
         }
     }
     this->layout->addStretch();

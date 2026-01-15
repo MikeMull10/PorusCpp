@@ -1,13 +1,26 @@
 #include "ImageViewer.h"
 #include "ImageToolbar.h"
+#include "ScalebarDialog.h"
+
 #include <QGraphicsPixmapItem>
 #include <QVBoxLayout>
+#include <QApplication>
+#include <QDialog>
+#include <QLabel>
+#include <QTimer>
+#include <QShortcut>
 
 ImageViewer::ImageViewer(QWidget* parent) : QWidget(parent) {
     setObjectName("ImageViewer");
 
     this->scene = new QGraphicsScene(this);
     this->view = new GraphicsView(this->scene, this);
+    view->setMouseTracking(true);
+    view->viewport()->setMouseTracking(true);
+
+    view->setFocusPolicy(Qt::StrongFocus);
+    view->viewport()->setFocusPolicy(Qt::StrongFocus);
+    view->setFocus();
     
     QVBoxLayout *layout = new QVBoxLayout(this);
     layout->addWidget(view);
@@ -17,6 +30,12 @@ ImageViewer::ImageViewer(QWidget* parent) : QWidget(parent) {
     this->view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     
     this->view->viewport()->installEventFilter(this);
+    view->installEventFilter(this);
+
+    QShortcut* undoShortcut = new QShortcut(QKeySequence("Ctrl+Z"), this);
+    connect(undoShortcut, &QShortcut::activated, this, &ImageViewer::undoCrop);
+    QShortcut* redoShortcut = new QShortcut(QKeySequence("Ctrl+Y"), this);
+    connect(redoShortcut, &QShortcut::activated, this, &ImageViewer::redoCrop);
 }
 
 ImageViewer::ImageViewer(ImageToolbar* toolbar, QWidget* parent) : ImageViewer(parent) {
@@ -25,6 +44,9 @@ ImageViewer::ImageViewer(ImageToolbar* toolbar, QWidget* parent) : ImageViewer(p
 }
 
 void ImageViewer::loadImage(const QString& path) {
+    undoStack = {};
+    redoStack = {};
+
     if (this->currentImage) {
         this->scene->removeItem(this->currentImage);
         delete this->currentImage;
@@ -33,6 +55,20 @@ void ImageViewer::loadImage(const QString& path) {
     QPixmap img(path);
     currentImage = this->scene->addPixmap(img);
     currentImage->setZValue(0);
+
+    QTimer::singleShot(1, this, [this]() {
+        qreal scaleX = view->viewport()->width() / currentImage->pixmap().width();
+        qreal scaleY = view->viewport()->height() / currentImage->pixmap().height();
+        qreal scale = qMin(scaleX, scaleY);
+
+        view->resetTransform();
+        view->scale(scale, scale);
+        view->centerOn(currentImage);
+        
+        QPointF pos(this->currentImage->sceneBoundingRect().width(), this->currentImage->sceneBoundingRect().height());
+        this->startPos = QPointF(0.0f, 0.0f);
+        this->finishCrop(pos);
+    });
 }
 
 void ImageViewer::setToolbar(ImageToolbar* toolbar) {
@@ -41,41 +77,62 @@ void ImageViewer::setToolbar(ImageToolbar* toolbar) {
 }
 
 void ImageViewer::onToolSwitch(TOOL tool) {
-    qDebug() << "SWAPPED";
     this->currentTool = tool;
 
-    if (this->currentTool == TOOL::HAND) this->view->setDragMode(QGraphicsView::ScrollHandDrag);
+    if (this->currentTool == TOOL::HAND) { this->view->setDragMode(QGraphicsView::ScrollHandDrag); qDebug() << "TEST"; }
     else this->view->setDragMode(QGraphicsView::NoDrag);
 }
 
-bool ImageViewer::eventFilter(QObject* obj, QEvent* event) {
-    if (!this->toolbar || this->currentTool == TOOL::NONE) return QWidget::eventFilter(obj, event);
+bool ImageViewer::eventFilter(QObject* obj, QEvent* event)
+{
+    if (!toolbar || currentTool == TOOL::NONE || currentTool == TOOL::HAND)
+        return QWidget::eventFilter(obj, event);
 
-    // Handle Cropping
-    if (this->currentTool == TOOL::CROP) {
-        if(event->type() == QEvent::MouseButtonPress) {
-            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-            if (mouseEvent->button() == Qt::LeftButton) {
-                this->cropStart = this->view->mapToScene(mouseEvent->pos());
-                this->startCrop();
-                return true;
-            }
-        }
-        else if (event->type() == QEvent::MouseMove) {
-            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-            if (this->isDrawing) {
-                QPointF currentPos = this->view->mapToScene(mouseEvent->pos());
-                this->updateCrop(currentPos);
-                return true;
-            }
-        }
-        else if (event->type() == QEvent::MouseButtonRelease) {
-            QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
-            if (mouseEvent->button() == Qt::LeftButton && this->isDrawing) {
-                this->finishCrop(this->view->mapToScene(mouseEvent->pos()));
-                return true;
-            }
-        }
+    // --- Mouse handling ---
+    if (event->type() != QEvent::MouseButtonPress &&
+        event->type() != QEvent::MouseMove &&
+        event->type() != QEvent::MouseButtonRelease) {
+        return QWidget::eventFilter(obj, event);
+    }
+
+    QMouseEvent* mouseEvent = static_cast<QMouseEvent*>(event);
+
+    if (event->type() != QEvent::MouseMove &&
+        mouseEvent->button() != Qt::LeftButton) {
+        return false;
+    }
+
+    bool shiftHeld = QApplication::keyboardModifiers() & Qt::ShiftModifier;
+
+    QPointF scenePos = view->mapToScene(mouseEvent->pos());
+
+    if (event->type() == QEvent::MouseButtonPress) {
+        startPos = scenePos;
+
+        if (currentTool == TOOL::CROP)
+            startCrop();
+        else if (currentTool == TOOL::SCALE)
+            startScaleBar();
+
+        return true;
+    }
+
+    else if (event->type() == QEvent::MouseMove && isDrawing) {
+        if (currentTool == TOOL::CROP)
+            updateCrop(scenePos);
+        else if (currentTool == TOOL::SCALE)
+            updateScaleBar(scenePos, shiftHeld);
+
+        return true;
+    }
+
+    else if (event->type() == QEvent::MouseButtonRelease && isDrawing) {
+        if (currentTool == TOOL::CROP)
+            finishCrop(scenePos);
+        else if (currentTool == TOOL::SCALE)
+            finishScaleBar(scenePos, shiftHeld);
+
+        return true;
     }
 
     return QWidget::eventFilter(obj, event);
@@ -83,14 +140,20 @@ bool ImageViewer::eventFilter(QObject* obj, QEvent* event) {
 
 void ImageViewer::startCrop() {
     this->isDrawing = true;
-    currentRect = this->scene->addRect(QRectF(this->cropStart, this->cropStart), QPen(Qt::red, 2), QBrush(QColor(255, 0, 0, 50)));
-    currentRect->setZValue(100);
+
+    QPen pen(Qt::red);
+    pen.setWidth(2);
+    pen.setCosmetic(true);
+    pen.setStyle(Qt::SolidLine);
+
+    this->currentRect = this->scene->addRect(QRectF(this->startPos, this->startPos), pen, QBrush(QColor(255, 0, 0, 120)));
+    this->currentRect->setZValue(100);
 }
 
 void ImageViewer::updateCrop(const QPointF& pos) {
-    if (currentRect) {
-        QRectF rect = QRectF(this->cropStart, pos).normalized();
-        currentRect->setRect(rect);
+    if (this->currentRect) {
+        QRectF rect = QRectF(this->startPos, pos).normalized();
+        this->currentRect->setRect(rect);
     }
 }
 
@@ -100,19 +163,82 @@ void ImageViewer::finishCrop(const QPointF& pos) {
     currentRect = nullptr;
 
     QRectF imageSize = this->currentImage->sceneBoundingRect();
-    QPointF startPos = this->cropStart;
-    QPointF endPos = pos;
+    QRectF crop = QRectF(this->startPos, pos).normalized().intersected(imageSize);
+    if (crop.isEmpty()) return;
 
-    QRectF crop = QRectF(startPos, endPos).normalized();
-    crop = crop.intersected(imageSize);
-
-    if (crop.isEmpty()) return;  // Don't remove crop if crop is entirely outside the image
-
-    if (this->cropOverlay) {
-        delete this->cropOverlay;
+    if (!this->cropOverlay) {
+        this->cropOverlay = new CropDimOverlay(imageSize);
+        this->scene->addItem(this->cropOverlay);
     }
 
-    this->cropOverlay = new CropDimOverlay(imageSize);
-    this->scene->addItem(this->cropOverlay);
+    // Save **current state** to undo stack before changing
+    undoStack.push(this->cropOverlay->getCropRect());
+    redoStack = {};
+
     this->cropOverlay->setCropRect(crop);
+}
+
+void ImageViewer::undoCrop() {
+    if (undoStack.size() <= 1 || !this->cropOverlay) return;
+
+    QRectF previous = undoStack.top();
+    undoStack.pop();
+
+    // Save current crop to redo
+    redoStack.push(this->cropOverlay->getCropRect());
+
+    this->cropOverlay->setCropRect(previous);
+    qDebug() << "UNDO";
+}
+
+void ImageViewer::redoCrop() {
+    if (redoStack.empty() || !this->cropOverlay) return;
+
+    QRectF next = redoStack.top();
+    redoStack.pop();
+
+    // Save current crop to undo
+    undoStack.push(this->cropOverlay->getCropRect());
+
+    this->cropOverlay->setCropRect(next);
+    qDebug() << "REDO";
+}
+
+
+void ImageViewer::startScaleBar() {
+    this->isDrawing = true;
+    this->scaleBarItem = this->scene->addLine(QLineF(this->startPos, this->startPos)), QPen(Qt::red, 2), QBrush(QColor(255, 0, 0, 50));
+    this->scaleBarItem->setZValue(100);
+}
+
+void ImageViewer::updateScaleBar(QPointF& pos, bool shift) {
+    if (!this->scaleBarItem) return;
+
+    if (shift) {
+        float diffX = std::abs(this->startPos.x() - pos.x());
+        float diffY = std::abs(this->startPos.y() - pos.y());
+
+        if (diffX > diffY) {
+            pos.setY(this->startPos.y());
+        } else {
+            pos.setX(this->startPos.x());
+        }
+    }
+
+    QLineF line = QLineF(this->startPos, pos);
+    this->scaleBarItem->setLine(line);
+}
+
+void ImageViewer::finishScaleBar(const QPointF& pos, bool shift) {
+    this->isDrawing = false;
+    qreal length = this->scaleBarItem->line().length();
+
+    delete scaleBarItem;
+    scaleBarItem = nullptr;
+
+    ScalebarDialog* popup = new ScalebarDialog(static_cast<float>(length), this);
+    if (popup->exec() == QDialog::Accepted) {
+        SCALE result = popup->getScale();
+        // TODO: Do stuff with the scale
+    }
 }

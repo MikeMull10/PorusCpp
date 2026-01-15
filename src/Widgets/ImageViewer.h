@@ -3,6 +3,7 @@
 #include "Tools.h"
 #include "GraphicsView.h"
 #include "CropDimOverlay.h"
+#include "ScalebarDialog.h"
 
 class ImageToolbar;
 
@@ -10,6 +11,7 @@ class ImageToolbar;
 #include <QGraphicsPixmapItem>
 #include <QPixmap>
 #include <QWheelEvent>
+#include <stack>
 
 class ImageViewer : public QWidget {
     Q_OBJECT
@@ -21,10 +23,15 @@ class ImageViewer : public QWidget {
 
     TOOL currentTool{ TOOL::NONE };
     QGraphicsRectItem* currentRect{ nullptr };
-    QPointF cropStart;
+    QGraphicsLineItem* scaleBarItem{ nullptr };
+    QPointF startPos;
     bool isDrawing{ false };
 
     ImageToolbar* toolbar{ nullptr };
+    SCALE scale;
+
+    std::stack<QRectF> undoStack;
+    std::stack<QRectF> redoStack;
 
 public:
     explicit ImageViewer(QWidget* parent);
@@ -41,4 +48,10 @@ private:
     void startCrop();
     void updateCrop(const QPointF& pos);
     void finishCrop(const QPointF& pos);
+    void undoCrop();
+    void redoCrop();
+
+    void startScaleBar();
+    void updateScaleBar(QPointF& pos, bool shift);
+    void finishScaleBar(const QPointF& pos, bool shift);
 };
