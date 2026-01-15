@@ -5,14 +5,16 @@
 ImagePopup::ImagePopup(const QString& path, QWidget* parent) : QDialog(parent) {
     this->setObjectName("ImagePopup");
     this->setWindowTitle("Image Preview");
-    this->resize(1200, 800);
+
+    QRect screen = QGuiApplication::primaryScreen()->availableGeometry();
+    this->resize(screen.width() * 0.9, screen.height() * 0.8);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
 
-    QLabel* messageLabel = new QLabel("Image loaded successfully!", this);
-    layout->addWidget(messageLabel);
+    this->toolbar = new ImageToolbar({ TOOL::HAND, TOOL::ZOOM, TOOL::CROP, TOOL::SCALE }, this);
+    layout->addWidget(this->toolbar);
     
-    this->imageViewer = new ImageViewer(this);
+    this->imageViewer = new ImageViewer(this->toolbar, this);
     this->imageViewer->loadImage(path);
     layout->addWidget(this->imageViewer);
     

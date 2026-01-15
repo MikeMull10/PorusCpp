@@ -8,5 +8,15 @@
         <file>icons/setting-white.svg</file>
         <file>icons/open-file-black.svg</file>
         <file>icons/open-file-white.svg</file>
+        <file>icons/save-file-black.svg</file>
+        <file>icons/save-file-white.svg</file>
+        <file>icons/hand-black.svg</file>
+        <file>icons/hand-white.svg</file>
+        <file>icons/crop-black.svg</file>
+        <file>icons/crop-white.svg</file>
+        <file>icons/ruler-black.svg</file>
+        <file>icons/ruler-white.svg</file>
+        <file>icons/zoom-black.svg</file>
+        <file>icons/zoom-white.svg</file>
     </qresource>
 </RCC>
