@@ -87,7 +87,8 @@ void MainWindow::openFile() {
         case 0:  // Import Page
             try {
                 ImagePopup* pop = new ImagePopup(fileName, this);
-                pop->exec();
+                if (pop->exec() == QDialog::Accepted) {}
+                delete pop;
             } catch (const std::exception& e) {
                 QMessageBox::critical(this, "Error", QString("Failed to load image: %1").arg(e.what()));
             } catch (...) {

@@ -188,7 +188,6 @@ void ImageViewer::undoCrop() {
     redoStack.push(this->cropOverlay->getCropRect());
 
     this->cropOverlay->setCropRect(previous);
-    qDebug() << "UNDO";
 }
 
 void ImageViewer::redoCrop() {
@@ -201,9 +200,7 @@ void ImageViewer::redoCrop() {
     undoStack.push(this->cropOverlay->getCropRect());
 
     this->cropOverlay->setCropRect(next);
-    qDebug() << "REDO";
 }
-
 
 void ImageViewer::startScaleBar() {
     this->isDrawing = true;
@@ -241,4 +238,5 @@ void ImageViewer::finishScaleBar(const QPointF& pos, bool shift) {
         SCALE result = popup->getScale();
         // TODO: Do stuff with the scale
     }
+    delete popup;
 }
