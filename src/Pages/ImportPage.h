@@ -10,8 +10,18 @@ class ImportPage : public QWidget {
     QHBoxLayout* mainLayout;
     ImageViewer* imageViewer;
 
+    QGraphicsPixmapItem* baseImage{ nullptr };
+    QRectF crop;
+
 public:
     explicit ImportPage(QWidget* parent = nullptr);
+    void setup();
 
     void loadImage(const QString& path);
+
+    void setBaseImage(QGraphicsPixmapItem* image);
+    QGraphicsPixmapItem* getBaseImage() const;
+
+    void setCrop(QRectF crop);
+    QRectF getCrop() const;
 };

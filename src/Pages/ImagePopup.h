@@ -15,4 +15,6 @@ class ImagePopup : public QDialog {
 
 public:
     explicit ImagePopup(const QString& path, QWidget* parent = nullptr);
+
+    ImageViewer* getImageViewer() const;
 };

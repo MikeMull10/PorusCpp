@@ -43,7 +43,7 @@ ImageViewer::ImageViewer(ImageToolbar* toolbar, QWidget* parent) : ImageViewer(p
     connect(this->toolbar, &ImageToolbar::toolActivated, this, &ImageViewer::onToolSwitch);
 }
 
-void ImageViewer::loadImage(const QString& path) {
+void ImageViewer::loadImage(QPixmap pixmap) {
     undoStack = {};
     redoStack = {};
 
@@ -52,8 +52,7 @@ void ImageViewer::loadImage(const QString& path) {
         delete this->currentImage;
     }
 
-    QPixmap img(path);
-    currentImage = this->scene->addPixmap(img);
+    currentImage = this->scene->addPixmap(pixmap);
     currentImage->setZValue(0);
 
     QTimer::singleShot(1, this, [this]() {
@@ -71,6 +70,11 @@ void ImageViewer::loadImage(const QString& path) {
     });
 }
 
+void ImageViewer::loadImage(const QString& path) {
+    QPixmap img(path);
+    this->loadImage(img);
+}
+
 void ImageViewer::setToolbar(ImageToolbar* toolbar) {
     this->toolbar = toolbar;
     connect(this->toolbar, &ImageToolbar::toolActivated, this, &ImageViewer::onToolSwitch);
@@ -82,6 +86,9 @@ void ImageViewer::onToolSwitch(TOOL tool) {
     if (this->currentTool == TOOL::HAND) { this->view->setDragMode(QGraphicsView::ScrollHandDrag); qDebug() << "TEST"; }
     else this->view->setDragMode(QGraphicsView::NoDrag);
 }
+
+QGraphicsPixmapItem* ImageViewer::getImage() const { return this->currentImage; }
+QRectF ImageViewer::getCrop() const { return this->cropOverlay->getCropRect(); }
 
 bool ImageViewer::eventFilter(QObject* obj, QEvent* event)
 {
@@ -146,7 +153,7 @@ void ImageViewer::startCrop() {
     pen.setCosmetic(true);
     pen.setStyle(Qt::SolidLine);
 
-    this->currentRect = this->scene->addRect(QRectF(this->startPos, this->startPos), pen, QBrush(QColor(255, 0, 0, 120)));
+    this->currentRect = this->scene->addRect(QRectF(this->startPos, this->startPos), pen, QBrush(QColor(255, 0, 0, 50)));
     this->currentRect->setZValue(100);
 }
 
@@ -204,7 +211,7 @@ void ImageViewer::redoCrop() {
 
 void ImageViewer::startScaleBar() {
     this->isDrawing = true;
-    this->scaleBarItem = this->scene->addLine(QLineF(this->startPos, this->startPos)), QPen(Qt::red, 2), QBrush(QColor(255, 0, 0, 50));
+    this->scaleBarItem = this->scene->addLine(QLineF(this->startPos, this->startPos), QPen(Qt::red, 2));
     this->scaleBarItem->setZValue(100);
 }
 

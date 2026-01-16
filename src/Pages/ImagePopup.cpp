@@ -24,3 +24,5 @@ ImagePopup::ImagePopup(const QString& path, QWidget* parent) : QDialog(parent) {
     connect(closeBtn, &QPushButton::clicked, this, &QDialog::accept);
     layout->addWidget(closeBtn);
 }
+
+ImageViewer* ImagePopup::getImageViewer() const { return this->imageViewer; }

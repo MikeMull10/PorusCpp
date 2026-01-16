@@ -37,9 +37,13 @@ public:
     explicit ImageViewer(QWidget* parent);
     explicit ImageViewer(ImageToolbar* toolbar, QWidget* parent);
 
+    void loadImage(QPixmap pixmap);
     void loadImage(const QString& path);
     void setToolbar(ImageToolbar* toolbar);
     void onToolSwitch(TOOL tool);
+
+    QGraphicsPixmapItem* getImage() const;
+    QRectF getCrop() const;
 
 protected:
     bool eventFilter(QObject* obj , QEvent* event) override;

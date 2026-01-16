@@ -37,7 +37,7 @@ QPushButton#TaskButton:hover {
 }
 
 #ToolButton {
-    border: 2px solid transparent;
+    border: 2px solid #2d2d2d;
     border-radius: 5px;
 }
 
