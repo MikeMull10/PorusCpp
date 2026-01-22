@@ -32,7 +32,7 @@ void ImportPage::setup() {
 }
 
 void ImportPage::setupSliders() {
-    this->addSlider("Brightness",   0, -100, 100);
+    this->addSlider("Brightness",   0, -150, 150);
     this->addSlider("Contrast",     0, -100, 100);
     this->addSlider("Min Value",    0,    0, 255);
     this->addSlider("Max Value",    255,  0, 255);

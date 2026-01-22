@@ -11,6 +11,7 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
+set(OpenCV_DIR "F:/OpenCV/build/x64/vc16/lib/")
 find_package(OpenCV REQUIRED)
 
 qt_standard_project_setup()

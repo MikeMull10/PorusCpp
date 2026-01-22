@@ -81,7 +81,7 @@ cv::Mat Algorithm::canny(const cv::Mat &image, int brightness, int contrast, int
 
     // --- Brightness & Contrast ---
     cv::Mat adjustedImage;
-    cv::convertScaleAbs(img, adjustedImage, (contrast + 100.0f) / 100.0f, brightness + 200);
+    cv::convertScaleAbs(img, adjustedImage, (contrast + 150.0f) / 100.0f, brightness + 200);
 
     // --- Thresholding ---
     cv::Mat th;
@@ -102,5 +102,19 @@ cv::Mat Algorithm::canny(const cv::Mat &image, int brightness, int contrast, int
         cv::morphologyEx(edges, edges, cv::MORPH_CLOSE, kernel);
     }
 
-    return edges;
+    cv::Mat result;
+    cv::cvtColor(th, result, cv::COLOR_GRAY2BGR); // convert grayscale to 3-channel so we can draw color edges
+
+    // Create a mask from edges
+    cv::Mat mask;
+    edges.convertTo(mask, CV_8U); // just to be safe
+    for (int y = 0; y < result.rows; ++y) {
+        for (int x = 0; x < result.cols; ++x) {
+            if (mask.at<uchar>(y, x) > 0) {
+                result.at<cv::Vec3b>(y, x) = cv::Vec3b(0, 0, 255); // red edges
+            }
+        }
+    }
+
+    return result;
 }
