@@ -19,6 +19,7 @@ class ImageViewer : public QWidget {
     QGraphicsScene *scene;
     GraphicsView *view;
     QGraphicsPixmapItem *currentImage{ nullptr };
+    QGraphicsPixmapItem *outlines{ nullptr };
     CropDimOverlay *cropOverlay{ nullptr };
 
     TOOL currentTool{ TOOL::NONE };
@@ -37,10 +38,13 @@ public:
     explicit ImageViewer(QWidget* parent);
     explicit ImageViewer(ImageToolbar* toolbar, QWidget* parent);
 
-    void loadImage(QPixmap pixmap);
+    void loadImage(const QPixmap& pixmap);
     void loadImage(const QString& path);
+    void setOutlines(const QPixmap& pixmap);
     void setToolbar(ImageToolbar* toolbar);
     void onToolSwitch(TOOL tool);
+
+    QPixmap getCurrentImage();
 
     QGraphicsPixmapItem* getImage() const;
     QRectF getCrop() const;

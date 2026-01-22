@@ -11,6 +11,8 @@ set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
+find_package(OpenCV REQUIRED)
+
 qt_standard_project_setup()
 
 file(GLOB_RECURSE SRC_FILES
@@ -21,6 +23,8 @@ file(GLOB_RECURSE SRC_FILES
     "${CMAKE_SOURCE_DIR}/src/Widgets/*.h"
     "${CMAKE_SOURCE_DIR}/src/Pages/*.cpp"
     "${CMAKE_SOURCE_DIR}/src/Pages/*.h"
+    "${CMAKE_SOURCE_DIR}/src/Algorithm/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/Algorithm/*.h"
 )
 
 qt_add_resources(RESOURCE_FILES src/resources/resources.qrc)
@@ -34,9 +38,13 @@ target_link_libraries(PorusCpp
     PRIVATE Qt6::Widgets
 )
 
+target_link_libraries(PorusCpp PRIVATE ${OpenCV_LIBS})
+target_include_directories(PorusCpp PRIVATE ${OpenCV_INCLUDE_DIRS})
+
 target_include_directories(PorusCpp PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/Widgets
     ${CMAKE_SOURCE_DIR}/src/Pages
     ${CMAKE_SOURCE_DIR}/src/resources
+    ${CMAKE_SOURCE_DIR}/src/Algorithm
 )

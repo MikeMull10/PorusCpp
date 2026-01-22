@@ -12,6 +12,7 @@
 #include <QApplication>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QFileInfo>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     setWindowTitle("PORUS X");
@@ -59,6 +60,11 @@ void MainWindow::updateStylesheet() {
     if (file.open(QIODevice::ReadOnly)) {
         QString stylesheet = file.readAll();
         stylesheet.replace("--primary", this->settings->value("primary").toString());
+
+        // Primary Dimmed
+        QColor color(this->settings->value("primary").toString());
+        QString darker(color.darker(120).name());
+        stylesheet.replace("--darkened", darker);
         qApp->setStyleSheet(stylesheet);
     }
 }
@@ -67,8 +73,11 @@ void MainWindow::initSettings() {
     QString theme = this->settings->value("theme", "light").toString();
     this->settings->setValue("theme", theme);
 
-    QString primary = this->settings->value("primary", "#ff0000").toString();
+    QString primary = this->settings->value("primary", "#ea00ff").toString();
     this->settings->setValue("primary", primary);
+
+    QString recentDir = this->settings->value("recentDir", "").toString();
+    this->settings->setValue("recentDir", recentDir);
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
@@ -78,10 +87,12 @@ void MainWindow::closeEvent(QCloseEvent* event) {
 
 void MainWindow::openFile() {
     QString fileName = QFileDialog::getOpenFileName(
-        this, "Open Image", "", "Images (*.png *.jpg *.jpeg *.bmp)" 
+        this, "Open Image", this->settings->value("recentDir").toString(), "Images (*.png *.jpg *.jpeg *.bmp)" 
     );
 
     if (fileName.isEmpty()) return;
+
+    this->settings->setValue("recentDir", QFileInfo(fileName).absolutePath());
 
     switch (this->main->currentIndex()) {
         case 0:  // Import Page
@@ -91,6 +102,7 @@ void MainWindow::openFile() {
                     this->importPage->setBaseImage(pop->getImageViewer()->getImage());
                     this->importPage->setCrop(pop->getImageViewer()->getCrop());
                     this->importPage->setup();
+                    this->importPage->updateImage();
                 }
                 delete pop;
             } catch (const std::exception& e) {

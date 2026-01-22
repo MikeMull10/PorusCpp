@@ -6,9 +6,8 @@ Taskbar::Taskbar(QWidget* parent) : QWidget(parent) {
     this->setObjectName("Taskbar");
     this->setProperty("class", "Taskbar");
 
-    // this->setStyleSheet(
-    //     "QWidget#TaskbarSection { background-color: rgba(255, 255, 255, 0.15); }"
-    // );
+    this->setAutoFillBackground(true);
+    this->setAttribute(Qt::WA_StyledBackground, true);
 
     this->layout = new QVBoxLayout(this);
     this->layout->setContentsMargins(0, 0, 0, 0);
@@ -44,7 +43,7 @@ Taskbar::Taskbar(QWidget* parent) : QWidget(parent) {
 }
 
 void Taskbar::updateWidth() {
-    int targetWidth = this->extended ? 250 : 40;  // 40 = icon size (36) + 2 * margin size (2)
+    int targetWidth = this->extended ? 250 : 44;  // 50 = icon size (36) + 2 * margin size (2) + padding (4)
     widthAnimation->stop();
     widthAnimation->setStartValue(this->width());
     widthAnimation->setEndValue(targetWidth);

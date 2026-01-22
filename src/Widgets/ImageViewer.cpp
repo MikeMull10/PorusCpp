@@ -43,7 +43,7 @@ ImageViewer::ImageViewer(ImageToolbar* toolbar, QWidget* parent) : ImageViewer(p
     connect(this->toolbar, &ImageToolbar::toolActivated, this, &ImageViewer::onToolSwitch);
 }
 
-void ImageViewer::loadImage(QPixmap pixmap) {
+void ImageViewer::loadImage(const QPixmap &pixmap) {
     undoStack = {};
     redoStack = {};
 
@@ -52,27 +52,31 @@ void ImageViewer::loadImage(QPixmap pixmap) {
         delete this->currentImage;
     }
 
-    currentImage = this->scene->addPixmap(pixmap);
-    currentImage->setZValue(0);
+    this->currentImage = this->scene->addPixmap(pixmap);
+    this->currentImage->setZValue(0);
+        
+    QPointF pos(this->currentImage->sceneBoundingRect().width(), this->currentImage->sceneBoundingRect().height());
+    this->startPos = QPointF(0.0f, 0.0f);
+    this->finishCrop(pos);
 
     QTimer::singleShot(1, this, [this]() {
-        qreal scaleX = view->viewport()->width() / currentImage->pixmap().width();
-        qreal scaleY = view->viewport()->height() / currentImage->pixmap().height();
-        qreal scale = qMin(scaleX, scaleY);
-
-        view->resetTransform();
-        view->scale(scale, scale);
-        view->centerOn(currentImage);
-        
-        QPointF pos(this->currentImage->sceneBoundingRect().width(), this->currentImage->sceneBoundingRect().height());
-        this->startPos = QPointF(0.0f, 0.0f);
-        this->finishCrop(pos);
+        this->view->fitInView(this->currentImage, Qt::KeepAspectRatio);
     });
 }
 
 void ImageViewer::loadImage(const QString& path) {
     QPixmap img(path);
     this->loadImage(img);
+}
+
+void ImageViewer::setOutlines(const QPixmap &image) {
+    if (!this->outlines) {
+        this->outlines = this->scene->addPixmap(image);
+        this->outlines->setZValue(2);
+        return;
+    }
+
+    this->outlines->setPixmap(image);
 }
 
 void ImageViewer::setToolbar(ImageToolbar* toolbar) {
@@ -247,3 +251,5 @@ void ImageViewer::finishScaleBar(const QPointF& pos, bool shift) {
     }
     delete popup;
 }
+
+QPixmap ImageViewer::getCurrentImage() { return this->currentImage->pixmap(); }

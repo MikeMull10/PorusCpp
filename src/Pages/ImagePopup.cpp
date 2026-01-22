@@ -2,6 +2,7 @@
 #include <QGuiApplication>
 #include <QLabel>
 #include <QPushButton>
+#include <QFile>
 
 ImagePopup::ImagePopup(const QString& path, QWidget* parent) : QDialog(parent) {
     this->setObjectName("ImagePopup");
