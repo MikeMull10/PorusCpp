@@ -73,3 +73,11 @@ void Taskbar::addTaskButton(TaskButton* btn, POSITION pos) {
     }
     this->bottom->addWidget(btn);
 }
+
+void Taskbar::addWidget(QWidget* widget, POSITION pos) {
+    if (pos == TOP) {
+        this->top->addWidget(widget);
+        return;
+    }
+    this->bottom->addWidget(widget);
+}

@@ -15,7 +15,7 @@
 #include <QFileInfo>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
-    setWindowTitle("PORUS X");
+    setWindowTitle("PORUS X (alpha)");
     resize(800, 600);
     showMaximized();
 
@@ -41,11 +41,22 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     this->importPage = new ImportPage(this);
     this->main->addWidget(this->importPage);
     this->main->setCurrentWidget(this->importPage);
+    this->importPage->setColor(QColor(this->settings->value("outlineColor", "#ff0000").toString()));
     
     this->mainLayout->addWidget(this->main);
     
     setCentralWidget(centralWidget);
     this->updateStylesheet();
+
+    // Page Buttons & Seperator
+    QFrame* seperator = new QFrame(this);
+    seperator->setFrameShape(QFrame::HLine);
+    seperator->setFrameShadow(QFrame::Sunken);
+    taskBar->addWidget(seperator);
+
+    TaskButton* importPageBtn = new TaskButton(QIcon(":/icons/import-white.svg"), "Import Page", taskBar);
+    taskBar->addTaskButton(importPageBtn);
+    connect(importPageBtn, &TaskButton::clicked, this, [this]() { this->main->setCurrentIndex(0); });
 
     // --- Keybinds ---
     QShortcut* quitShortcut = new QShortcut(QKeySequence("Ctrl+Q"), this);
@@ -78,6 +89,9 @@ void MainWindow::initSettings() {
 
     QString recentDir = this->settings->value("recentDir", "").toString();
     this->settings->setValue("recentDir", recentDir);
+
+    QString outlineColor = this->settings->value("outlineColor", "#ea00ff").toString();
+    this->settings->setValue("outlineColor", outlineColor);
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {

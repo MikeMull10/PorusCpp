@@ -1,19 +1,53 @@
 #include "ImportPage.h"
 #include "SubtitleLabel.h"
 #include "Algorithm.h"
+#include <QShortcut>
+
 #include <QSpinBox>
 
 ImportPage::ImportPage(QWidget* parent) : QWidget(parent) {
     setObjectName("ImagePage");
     this->mainLayout = new QHBoxLayout(this);
     this->settingsLayout = new QVBoxLayout();
-    this->imageViewer = new ImageViewer(this);
-    this->mainLayout->addLayout(this->settingsLayout);
-    this->mainLayout->addWidget(this->imageViewer);
+    this->viewLayout = new QVBoxLayout();
 
+    QHBoxLayout* toolbarLayout = new QHBoxLayout();
+    this->viewLayout->addLayout(toolbarLayout);
+
+    this->toolbar = new ImageToolbar({ TOOL::HAND, TOOL::ZOOM }, this);
+    toolbarLayout->addWidget(this->toolbar);
+    toolbarLayout->addStretch();
+
+    // Show Background Button
+    this->showBackgroundBtn = new ToolButton(QIcon(":/icons/background-white.svg"), this);
+    showBackgroundBtn->setScale(1.5f);
+    toolbarLayout->addWidget(this->showBackgroundBtn);
+    connect(this->showBackgroundBtn, &ToolButton::clicked, this, [this]() { this->showBackgroundBtn->flipActive(); this->updateImage(); });
+    QShortcut* keyB = new QShortcut(QKeySequence(Qt::Key_B), this);
+    connect(keyB, &QShortcut::activated, this, [this]() { this->showBackgroundBtn->flipActive(); this->updateImage(); });
+
+    // Outline Opacity
+    QSlider* opacitySlider = new QSlider(Qt::Horizontal, this);
+    opacitySlider->setRange(0, 100);
+    opacitySlider->setValue(100);
+    opacitySlider->setMaximumWidth(100);
+    opacitySlider->setCursor(Qt::PointingHandCursor);
+    opacitySlider->setToolTip(QString("Outlines Opacity: %1%").arg(opacitySlider->value()));
+    connect(opacitySlider, &QSlider::valueChanged, this, [this, opacitySlider]() { this->updateImage(); opacitySlider->setToolTip(QString("Outlines Opacity: %1%").arg(opacitySlider->value())); });
+    toolbarLayout->addWidget(opacitySlider);
+
+    this->imageViewer = new ImageViewer(this->toolbar, this);
+    this->viewLayout->addWidget(this->imageViewer);
+    this->mainLayout->addLayout(this->settingsLayout);
+    this->mainLayout->addLayout(this->viewLayout);
     this->mainLayout->setStretch(0, 1);
     this->mainLayout->setStretch(1, 3);
     this->setupSliders();
+
+    this->sendBtn = new PushButton("Send to Editor");
+    this->settingsLayout->addWidget(this->sendBtn);
+
+    this->outlineColor = cv::Vec3b(0, 0, 255);
 }
 
 void ImportPage::setup() {
@@ -48,6 +82,7 @@ void ImportPage::setupSliders() {
 }
 
 void ImportPage::updateImage() {
+    if (this->imageViewer->imageEmpty()) return;
     QPixmap img = this->imageViewer->getCurrentImage();
 
     cv::Mat matImg = Algorithm::pixmapToGrayMat(img);
@@ -60,26 +95,17 @@ void ImportPage::updateImage() {
                               this->sliders["Canny Low"]->value(),
                               this->sliders["Canny High"]->value(),
                               this->sliders["Denoise"]->value(),
-                              this->sliders["Expand Edges"]->value()
+                              this->sliders["Expand Edges"]->value(),
+                              this->outlineColor,
+                              this->showBackgroundBtn->property("active") == "true"
                             );
-    
-    qDebug() << "edges empty?" << edges.empty();
-    qDebug() << "edges size:" << edges.cols << edges.rows;
-    qDebug() << "edges type:" << edges.type();
-    double minVal = 0.0;
-    double maxVal = 0.0;
-
-    cv::minMaxLoc(edges, &minVal, &maxVal);
-
-    qDebug() << "Min/Max:" << minVal << maxVal;
-
     
     QPixmap pix = Algorithm::matToPixmap(edges);
     this->imageViewer->setOutlines(pix);
 }
 
 void ImportPage::addSlider(std::string name, int default_value, int min_value, int max_value, std::string tooltip) {
-    if (sliders.count(name) > 0) return;
+    if (sliders.count(name) > 0) return;  // Check if slider already exists with the same name
 
     QHBoxLayout *layout = new QHBoxLayout();
 
@@ -93,6 +119,7 @@ void ImportPage::addSlider(std::string name, int default_value, int min_value, i
     slider->setValue(default_value);
     slider->setMinimumWidth(150);
     slider->setCursor(Qt::PointingHandCursor);
+    slider->setToolTip(QString("%1: %2").arg(QString::fromStdString(name)).arg(slider->value()));
 
     QSpinBox *spinbox = new QSpinBox(this);
     spinbox->setRange(min_value, max_value);
@@ -103,8 +130,9 @@ void ImportPage::addSlider(std::string name, int default_value, int min_value, i
     connect(slider, &QSlider::valueChanged, this, [spinbox](int val){
         spinbox->setValue(val);
     });
-    connect(spinbox, &QSpinBox::valueChanged, this, [slider](int val){
+    connect(spinbox, &QSpinBox::valueChanged, this, [name, slider](int val){
         slider->setValue(val);
+        slider->setToolTip(QString("%1: %2").arg(QString::fromStdString(name)).arg(val));
     });
 
     layout->addWidget(label);
@@ -118,8 +146,17 @@ void ImportPage::addSlider(std::string name, int default_value, int min_value, i
 
 void ImportPage::loadImage(const QString& path) { this->imageViewer->loadImage(path); }
 
+void ImportPage::setColor(QColor qcolor) {
+    this->outlineColor[0] = qcolor.blue();   // B
+    this->outlineColor[1] = qcolor.green();  // G
+    this->outlineColor[2] = qcolor.red();    // R
+}
+
 void ImportPage::setBaseImage(QGraphicsPixmapItem* image) { this->baseImage = image; }
 QGraphicsPixmapItem* ImportPage::getBaseImage() const { return this->baseImage; }
 
 void ImportPage::setCrop(QRectF crop) { this->crop = crop; }
 QRectF ImportPage::getCrop() const { return this->crop; }
+
+QVBoxLayout* ImportPage::getSettingsLayout() const { return this->settingsLayout; }
+QVBoxLayout* ImportPage::getViewLayout() const { return this->viewLayout; }

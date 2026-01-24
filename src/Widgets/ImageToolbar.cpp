@@ -31,22 +31,37 @@ ImageToolbar::ImageToolbar(const QVector<TOOL>& enabled, QWidget* parent) : QWid
     this->scaleBtn = new ToolButton(QIcon(":/icons/ruler-white.svg"), this);
     this->scaleBtn->setProperty("tool", "SCALE");
     this->scaleBtn->setToolTip("Set Scale (R)");
+    this->resetZoomBtn = new ToolButton(QIcon(":/icons/reset-zoom-white.svg"), this);
+    this->resetZoomBtn->setProperty("tool", "RESET_ZOOM");
+    this->resetZoomBtn->setToolTip("Reset Zoom (Ctrl+0)");
+
+    this->handBtn->hide(); this->handBtn->setScale(1.5f);
+    this->zoomBtn->hide(); this->zoomBtn->setScale(1.5f);
+    this->cropBtn->hide(); this->cropBtn->setScale(1.5f);
+    this->scaleBtn->hide(); this->scaleBtn->setScale(1.5f);
+    this->resetZoomBtn->hide(); this->resetZoomBtn->setScale(1.5f);
     
     for (TOOL tool : enabled) {
         if (tool == TOOL::HAND) {
             this->layout->addWidget(this->handBtn);
+            this->handBtn->show();
             QShortcut* shortcut = new QShortcut(QKeySequence(Qt::Key_H), this);
             connect(shortcut, &QShortcut::activated, this, [this]() { handleClick(this->handBtn); });
         } else if (tool == TOOL::ZOOM) {
             this->layout->addWidget(this->zoomBtn);
+            this->zoomBtn->show();
             QShortcut* shortcut = new QShortcut(QKeySequence(Qt::Key_Z), this);
             connect(shortcut, &QShortcut::activated, this, [this]() { handleClick(this->zoomBtn); });
+            this->layout->addWidget(this->resetZoomBtn);
+            this->resetZoomBtn->show();
         } else if (tool == TOOL::CROP) {
             this->layout->addWidget(this->cropBtn);
+            this->cropBtn->show();
             QShortcut* shortcut = new QShortcut(QKeySequence(Qt::Key_C), this);
             connect(shortcut, &QShortcut::activated, this, [this]() { handleClick(this->cropBtn); });
         } else if (tool == TOOL::SCALE) {
             this->layout->addWidget(this->scaleBtn);
+            this->scaleBtn->show();
             QShortcut* shortcut = new QShortcut(QKeySequence(Qt::Key_R), this);
             connect(shortcut, &QShortcut::activated, this, [this]() { handleClick(this->scaleBtn); });
         }
@@ -76,6 +91,7 @@ ToolButton* ImageToolbar::getBtn(const QString& toolType) {
     else if (toolType == "ZOOM") return this->zoomBtn;
     else if (toolType == "CROP") return this->cropBtn;
     else if (toolType == "SCALE") return this->scaleBtn;
+    else if (toolType == "RESET_ZOOM") return this->resetZoomBtn;
     return nullptr;
 }
 

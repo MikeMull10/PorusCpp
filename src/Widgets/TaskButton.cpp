@@ -10,9 +10,9 @@ TaskButton::TaskButton(const QIcon& icon, const QString& text, QWidget* parent) 
     this->icon = icon;
     this->text = text;
 
-    setIcon(this->icon);
-    setIconSize(QSize(24, 24));
-    setText(this->text);
+    this->setIcon(this->icon);
+    this->setIconSize(QSize(24, 24));
+    this->setText(this->text);
 
     this->extended = !text.isEmpty();
 }
@@ -28,7 +28,12 @@ void TaskButton::setVisibility(bool extended) {
         setText("");
     }
 }
+
 void TaskButton::mousePressEvent(QMouseEvent* event) {
     if (event->button() == Qt::LeftButton) emit clicked();
     QWidget::mousePressEvent(event);
+}
+
+void TaskButton::setScale(float scale) {
+    this->setIconSize(QSize((int) 24 * scale, (int) 24 * scale));
 }

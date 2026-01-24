@@ -26,4 +26,5 @@ public:
 
     void updateWidth();
     void addTaskButton(TaskButton* btn, POSITION pos = TOP);
+    void addWidget(QWidget* widget, POSITION pos = TOP);
 };

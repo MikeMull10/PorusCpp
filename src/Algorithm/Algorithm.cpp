@@ -76,12 +76,12 @@ std::vector<std::vector<cv::Point>> Algorithm::getContours(const cv::Mat &image)
     return contours;
 }
 
-cv::Mat Algorithm::canny(const cv::Mat &image, int brightness, int contrast, int min_threshold, int max_threshold, int blur, int canny_low, int canny_high, int denoise, int expand) {
+cv::Mat Algorithm::canny(const cv::Mat &image, int brightness, int contrast, int min_threshold, int max_threshold, int blur, int canny_low, int canny_high, int denoise, int expand, cv::Vec3b outlineColor, bool showBackground) {
     cv::Mat img = image.clone();
 
     // --- Brightness & Contrast ---
     cv::Mat adjustedImage;
-    cv::convertScaleAbs(img, adjustedImage, (contrast + 150.0f) / 100.0f, brightness + 200);
+    cv::convertScaleAbs(img, adjustedImage, (contrast + 100.0f) / 100.0f, brightness);
 
     // --- Thresholding ---
     cv::Mat th;
@@ -102,6 +102,8 @@ cv::Mat Algorithm::canny(const cv::Mat &image, int brightness, int contrast, int
         cv::morphologyEx(edges, edges, cv::MORPH_CLOSE, kernel);
     }
 
+    if (!showBackground) return edges;
+
     cv::Mat result;
     cv::cvtColor(th, result, cv::COLOR_GRAY2BGR); // convert grayscale to 3-channel so we can draw color edges
 
@@ -111,7 +113,7 @@ cv::Mat Algorithm::canny(const cv::Mat &image, int brightness, int contrast, int
     for (int y = 0; y < result.rows; ++y) {
         for (int x = 0; x < result.cols; ++x) {
             if (mask.at<uchar>(y, x) > 0) {
-                result.at<cv::Vec3b>(y, x) = cv::Vec3b(0, 0, 255); // red edges
+                result.at<cv::Vec3b>(y, x) = outlineColor; // colored edges
             }
         }
     }

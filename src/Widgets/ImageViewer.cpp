@@ -9,6 +9,7 @@
 #include <QLabel>
 #include <QTimer>
 #include <QShortcut>
+#include <QScrollBar>
 
 ImageViewer::ImageViewer(QWidget* parent) : QWidget(parent) {
     setObjectName("ImageViewer");
@@ -28,6 +29,8 @@ ImageViewer::ImageViewer(QWidget* parent) : QWidget(parent) {
 
     this->view->setDragMode(QGraphicsView::NoDrag);
     this->view->setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+    this->view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    this->view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     
     this->view->viewport()->installEventFilter(this);
     view->installEventFilter(this);
@@ -36,11 +39,14 @@ ImageViewer::ImageViewer(QWidget* parent) : QWidget(parent) {
     connect(undoShortcut, &QShortcut::activated, this, &ImageViewer::undoCrop);
     QShortcut* redoShortcut = new QShortcut(QKeySequence("Ctrl+Y"), this);
     connect(redoShortcut, &QShortcut::activated, this, &ImageViewer::redoCrop);
+    QShortcut* resetZoomShortcut = new QShortcut(QKeySequence("Ctrl+0"), this);
+    connect(resetZoomShortcut, &QShortcut::activated, this, &ImageViewer::resetZoom);
 }
 
 ImageViewer::ImageViewer(ImageToolbar* toolbar, QWidget* parent) : ImageViewer(parent) {
     this->toolbar = toolbar;
     connect(this->toolbar, &ImageToolbar::toolActivated, this, &ImageViewer::onToolSwitch);
+    if (this->toolbar->getBtn("RESET_ZOOM")) (this->toolbar->getBtn("RESET_ZOOM"), &ToolButton::clicked, this, &ImageViewer::resetZoom);
 }
 
 void ImageViewer::loadImage(const QPixmap &pixmap) {
@@ -87,8 +93,8 @@ void ImageViewer::setToolbar(ImageToolbar* toolbar) {
 void ImageViewer::onToolSwitch(TOOL tool) {
     this->currentTool = tool;
 
-    if (this->currentTool == TOOL::HAND) { this->view->setDragMode(QGraphicsView::ScrollHandDrag); qDebug() << "TEST"; }
-    else this->view->setDragMode(QGraphicsView::NoDrag);
+    if (this->currentTool == TOOL::HAND) { this->setCursor(Qt::OpenHandCursor); }
+    else this->setCursor(Qt::PointingHandCursor);
 }
 
 QGraphicsPixmapItem* ImageViewer::getImage() const { return this->currentImage; }
@@ -96,7 +102,7 @@ QRectF ImageViewer::getCrop() const { return this->cropOverlay->getCropRect(); }
 
 bool ImageViewer::eventFilter(QObject* obj, QEvent* event)
 {
-    if (!toolbar || currentTool == TOOL::NONE || currentTool == TOOL::HAND)
+    if (!toolbar || currentTool == TOOL::NONE)
         return QWidget::eventFilter(obj, event);
 
     // --- Mouse handling ---
@@ -124,24 +130,35 @@ bool ImageViewer::eventFilter(QObject* obj, QEvent* event)
             startCrop();
         else if (currentTool == TOOL::SCALE)
             startScaleBar();
+        else if (currentTool == TOOL::ZOOM)
+            startZoom();
+        else if (currentTool == TOOL::HAND) {
+            this->isPanning = true;
+        }
 
         return true;
     }
 
-    else if (event->type() == QEvent::MouseMove && isDrawing) {
-        if (currentTool == TOOL::CROP)
+    else if (event->type() == QEvent::MouseMove && ( isDrawing || isPanning )) {
+        if (currentTool == TOOL::CROP || currentTool == TOOL::ZOOM)
             updateCrop(scenePos);
         else if (currentTool == TOOL::SCALE)
             updateScaleBar(scenePos, shiftHeld);
+        else if (currentTool == TOOL::HAND)
+            updatePan(scenePos);
 
         return true;
     }
 
-    else if (event->type() == QEvent::MouseButtonRelease && isDrawing) {
+    else if (event->type() == QEvent::MouseButtonRelease && ( isDrawing || isPanning )) {
         if (currentTool == TOOL::CROP)
             finishCrop(scenePos);
         else if (currentTool == TOOL::SCALE)
             finishScaleBar(scenePos, shiftHeld);
+        else if (currentTool == TOOL::ZOOM)
+            finishZoom(scenePos);
+        else if (currentTool == TOOL::HAND)
+            this->isPanning = false;
 
         return true;
     }
@@ -252,4 +269,50 @@ void ImageViewer::finishScaleBar(const QPointF& pos, bool shift) {
     delete popup;
 }
 
-QPixmap ImageViewer::getCurrentImage() { return this->currentImage->pixmap(); }
+bool ImageViewer::imageEmpty() const { return this->currentImage == nullptr; }
+QPixmap ImageViewer::getCurrentImage() const { return this->currentImage->pixmap(); }
+
+void ImageViewer::resetZoom() {
+    if (!this->view || !this->currentImage) return;
+
+    this->view->fitInView(this->currentImage, Qt::KeepAspectRatio);
+}
+
+void ImageViewer::startZoom() {
+    this->isDrawing = true;
+
+    QPen pen(Qt::red);
+    pen.setWidth(2);
+    pen.setCosmetic(true);
+    pen.setStyle(Qt::DashLine);
+
+    this->currentRect = this->scene->addRect(QRectF(this->startPos, this->startPos), pen, QBrush(QColor(255, 0, 0, 50)));
+    this->currentRect->setZValue(99);
+}
+
+void ImageViewer::finishZoom(const QPointF& pos) {
+    this->isDrawing = false;
+    delete currentRect;
+    currentRect = nullptr;
+
+    QRectF zoom = QRectF(this->startPos, pos).normalized();
+    if (zoom.isEmpty()) return;
+
+    this->view->fitInView(zoom, Qt::KeepAspectRatio); // Could do Qt::IgnoreAspectRatio, but that throws off the ascpect ratio until Ctrl+0
+}
+
+void ImageViewer::updatePan(const QPointF& pos) {
+    if (!isPanning) return;
+
+    qreal dx = pos.x() - startPos.x();
+    qreal dy = pos.y() - startPos.y();
+
+    this->view->horizontalScrollBar()->setValue(
+        this->view->horizontalScrollBar()->value() - dx * this->view->transform().m11()
+    );
+    this->view->verticalScrollBar()->setValue(
+        this->view->verticalScrollBar()->value() - dy * this->view->transform().m22()
+    );
+
+    this->startPos = pos;
+}

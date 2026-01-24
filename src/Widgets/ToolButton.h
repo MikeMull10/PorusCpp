@@ -14,6 +14,9 @@ public:
     explicit ToolButton(const QIcon& icon, QWidget *parent = nullptr);
 
     void setActive(bool active);
+    void flipActive();
+
+    void setScale(float scale);
 
 protected:
     void paintEvent(QPaintEvent* e) override;

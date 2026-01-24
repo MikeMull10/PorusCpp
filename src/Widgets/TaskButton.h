@@ -23,6 +23,8 @@ public:
 
     void setVisibility(bool extended);
 
+    void setScale(float scale);
+
 signals:
     void clicked();
 

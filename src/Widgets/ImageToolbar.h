@@ -15,6 +15,7 @@ class ImageToolbar : public QWidget {
     ToolButton* zoomBtn{ nullptr };
     ToolButton* cropBtn{ nullptr };
     ToolButton* scaleBtn{ nullptr };
+    ToolButton* resetZoomBtn{ nullptr };
 
     ToolButton* active{ nullptr };
 

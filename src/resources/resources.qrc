@@ -18,5 +18,11 @@
         <file>icons/ruler-white.svg</file>
         <file>icons/zoom-black.svg</file>
         <file>icons/zoom-white.svg</file>
+        <file>icons/reset-zoom-black.svg</file>
+        <file>icons/reset-zoom-white.svg</file>
+        <file>icons/import-black.svg</file>
+        <file>icons/import-white.svg</file>
+        <file>icons/background-black.svg</file>
+        <file>icons/background-white.svg</file>
     </qresource>
 </RCC>

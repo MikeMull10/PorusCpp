@@ -27,6 +27,7 @@ class ImageViewer : public QWidget {
     QGraphicsLineItem* scaleBarItem{ nullptr };
     QPointF startPos;
     bool isDrawing{ false };
+    bool isPanning{ false };
 
     ImageToolbar* toolbar{ nullptr };
     SCALE scale;
@@ -44,7 +45,8 @@ public:
     void setToolbar(ImageToolbar* toolbar);
     void onToolSwitch(TOOL tool);
 
-    QPixmap getCurrentImage();
+    bool imageEmpty() const;
+    QPixmap getCurrentImage() const;
 
     QGraphicsPixmapItem* getImage() const;
     QRectF getCrop() const;
@@ -62,4 +64,11 @@ private:
     void startScaleBar();
     void updateScaleBar(QPointF& pos, bool shift);
     void finishScaleBar(const QPointF& pos, bool shift);
+
+    void startZoom();
+    void finishZoom(const QPointF& pos);
+
+    void updatePan(const QPointF& pos);
+
+    void resetZoom();
 };

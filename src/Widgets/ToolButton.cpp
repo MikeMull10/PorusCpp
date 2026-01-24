@@ -2,23 +2,23 @@
 #include <QStyle>
 
 ToolButton::ToolButton(QWidget *parent) : QToolButton(parent) {
-    setObjectName("ToolButton");
-    setCursor(Qt::PointingHandCursor);
-    setProperty("active", false);
+    this->setObjectName("ToolButton");
+    this->setCursor(Qt::PointingHandCursor);
+    this->setProperty("active", false);
 }
 
 ToolButton::ToolButton(const QIcon& icon, QWidget *parent) : ToolButton(parent) {
-    setIcon(icon);
-    setIconSize(QSize(16, 16));
-    setFixedSize(QSize(36, 36));
+    this->setIcon(icon);
+    this->setIconSize(QSize(16, 16));
+    this->setFixedSize(QSize(36, 36));
 }
 
 void ToolButton::paintEvent(QPaintEvent* e)
 {
     QStyleOptionToolButton opt;
     initStyleOption(&opt);
-
-    opt.iconSize = QSize(16, 16);
+    
+    opt.iconSize = this->iconSize();
     opt.features = QStyleOptionToolButton::None;
 
     QPainter p(this);
@@ -26,3 +26,9 @@ void ToolButton::paintEvent(QPaintEvent* e)
 }
 
 void ToolButton::setActive(bool active) { this->setProperty("active", active); style()->unpolish(this); style()->polish(this); }
+void ToolButton::flipActive() { this->setActive( !(this->property("active") == "true") ); }
+
+void ToolButton::setScale(float scale) {
+    this->setIconSize(QSize((int) 16 * scale, (int) 16 * scale));
+    this->setFixedSize(QSize((int) 16 * scale + 20, (int) 16 * scale + 20));
+}
