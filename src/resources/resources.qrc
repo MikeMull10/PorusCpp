@@ -24,5 +24,27 @@
         <file>icons/import-white.svg</file>
         <file>icons/background-black.svg</file>
         <file>icons/background-white.svg</file>
+        <file>icons/add-point-black.svg</file>
+        <file>icons/add-point-white.svg</file>
+        <file>icons/add-points-follow-black.svg</file>
+        <file>icons/add-points-follow-white.svg</file>
+        <file>icons/del-black.svg</file>
+        <file>icons/del-white.svg</file>
+        <file>icons/delete-polygon-black.svg</file>
+        <file>icons/delete-polygon-white.svg</file>
+        <file>icons/merge-point-black.svg</file>
+        <file>icons/merge-point-white.svg</file>
+        <file>icons/move-point-black.svg</file>
+        <file>icons/move-point-white.svg</file>
+        <file>icons/redo-black.svg</file>
+        <file>icons/redo-white.svg</file>
+        <file>icons/select-lasso-black.svg</file>
+        <file>icons/select-lasso-white.svg</file>
+        <file>icons/select-rect-black.svg</file>
+        <file>icons/select-rect-white.svg</file>
+        <file>icons/select-single-black.svg</file>
+        <file>icons/select-single-white.svg</file>
+        <file>icons/undo-black.svg</file>
+        <file>icons/undo-white.svg</file>
     </qresource>
 </RCC>

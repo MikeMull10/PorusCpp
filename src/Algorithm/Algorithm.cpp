@@ -68,15 +68,36 @@ QPixmap Algorithm::matToPixmap(const cv::Mat& mat) {
 }
 
 std::vector<std::vector<cv::Point>> Algorithm::getContours(const cv::Mat &image) {
+    if (image.empty()) {
+        return std::vector<std::vector<cv::Point>>();
+    }
+    
     cv::Mat img = image.clone();
-
+    
+    // Convert to grayscale if needed
+    if (img.channels() == 3) {
+        cv::cvtColor(img, img, cv::COLOR_BGR2GRAY);
+    } else if (img.channels() == 4) {
+        cv::cvtColor(img, img, cv::COLOR_BGRA2GRAY);
+    }
+    
+    // Ensure single channel
+    if (img.channels() != 1) {
+        // qWarning() << "Failed to convert image to grayscale for contour detection";
+        return std::vector<std::vector<cv::Point>>();
+    }
+    
+    // Apply threshold to create binary image (if not already binary)
+    cv::Mat binary;
+    cv::threshold(img, binary, 127, 255, cv::THRESH_BINARY);
+    
     std::vector<std::vector<cv::Point>> contours;
-    cv::findContours(img, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+    cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
     return contours;
 }
 
-cv::Mat Algorithm::canny(const cv::Mat &image, int brightness, int contrast, int min_threshold, int max_threshold, int blur, int canny_low, int canny_high, int denoise, int expand, cv::Vec3b outlineColor, bool showBackground) {
+cv::Mat Algorithm::canny(const cv::Mat &image, int brightness, int contrast, int min_threshold, int max_threshold, int blur, int canny_low, int canny_high, int denoise, int expand, cv::Vec3b outlineColor, bool showBackground, float outlineOpacity) {
     cv::Mat img = image.clone();
 
     // --- Brightness & Contrast ---
@@ -102,21 +123,36 @@ cv::Mat Algorithm::canny(const cv::Mat &image, int brightness, int contrast, int
         cv::morphologyEx(edges, edges, cv::MORPH_CLOSE, kernel);
     }
 
-    if (!showBackground) return edges;
-
+    // --- Background ---
     cv::Mat result;
-    cv::cvtColor(th, result, cv::COLOR_GRAY2BGR); // convert grayscale to 3-channel so we can draw color edges
+    if (showBackground) {
+        cv::cvtColor(th, result, cv::COLOR_GRAY2BGR);
+    } else {
+        result = cv::Mat::zeros(th.size(), CV_8UC3);
+    }
 
-    // Create a mask from edges
-    cv::Mat mask;
-    edges.convertTo(mask, CV_8U); // just to be safe
+    // --- Color + opacity ---
+    cv::Mat coloredEdges(result.size(), CV_8UC3, outlineColor);
+    cv::Mat edgeMask;
+    edges.convertTo(edgeMask, CV_32F, 1.0 / 255.0);
+
+    float alpha = std::clamp(outlineOpacity, 0.0f, 1.0f);
+
+    cv::Mat resultF, edgesF;
+    result.convertTo(resultF, CV_32F);
+    coloredEdges.convertTo(edgesF, CV_32F);
+
     for (int y = 0; y < result.rows; ++y) {
         for (int x = 0; x < result.cols; ++x) {
-            if (mask.at<uchar>(y, x) > 0) {
-                result.at<cv::Vec3b>(y, x) = outlineColor; // colored edges
+            float m = edgeMask.at<float>(y, x) * alpha;
+            if (m > 0.0f) {
+                resultF.at<cv::Vec3f>(y, x) =
+                    resultF.at<cv::Vec3f>(y, x) * (1.0f - m) +
+                    edgesF.at<cv::Vec3f>(y, x) * m;
             }
         }
     }
 
+    resultF.convertTo(result, CV_8UC3);
     return result;
 }

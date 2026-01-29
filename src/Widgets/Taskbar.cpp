@@ -32,8 +32,8 @@ Taskbar::Taskbar(QWidget* parent) : QWidget(parent) {
         this->updateWidth();
     });
 
-    TaskButton *settings = new TaskButton(QIcon(":/icons/setting-white.svg"), "Settings", this);
-    this->bottom->addWidget(settings);
+    this->settingsBtn = new TaskButton(QIcon(":/icons/setting-white.svg"), "Settings", this);
+    this->bottom->addWidget(this->settingsBtn);
 
     widthAnimation = new QPropertyAnimation(this, "maximumWidth");
     widthAnimation->setDuration(200);
@@ -81,3 +81,5 @@ void Taskbar::addWidget(QWidget* widget, POSITION pos) {
     }
     this->bottom->addWidget(widget);
 }
+
+TaskButton* Taskbar::getSettingsBtn() const { return this->settingsBtn; }

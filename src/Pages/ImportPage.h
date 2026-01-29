@@ -18,9 +18,12 @@ class ImportPage : public QWidget {
     QVBoxLayout* viewLayout;
     ImageViewer* imageViewer;
     ImageToolbar* toolbar;
+    QPixmap croppedPixmap;
 
     PushButton* sendBtn{ nullptr };
     ToolButton* showBackgroundBtn{ nullptr };
+
+    QSlider* opacitySlider{ nullptr };
 
     QGraphicsPixmapItem* baseImage{ nullptr };
     QRectF crop;
@@ -43,10 +46,13 @@ public:
 
     void setBaseImage(QGraphicsPixmapItem* image);
     QGraphicsPixmapItem* getBaseImage() const;
+    QPixmap getCroppedPixmap() const;
 
     void setCrop(QRectF crop);
     QRectF getCrop() const;
 
     QVBoxLayout* getSettingsLayout() const;
     QVBoxLayout* getViewLayout() const;
+    PushButton* getSendBtn() const;
+    std::vector<std::vector<cv::Point>> getCannyData();
 };

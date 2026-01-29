@@ -26,6 +26,8 @@ file(GLOB_RECURSE SRC_FILES
     "${CMAKE_SOURCE_DIR}/src/Pages/*.h"
     "${CMAKE_SOURCE_DIR}/src/Algorithm/*.cpp"
     "${CMAKE_SOURCE_DIR}/src/Algorithm/*.h"
+    "${CMAKE_SOURCE_DIR}/src/Components/*.cpp"
+    "${CMAKE_SOURCE_DIR}/src/Components/*.h"
 )
 
 qt_add_resources(RESOURCE_FILES src/resources/resources.qrc)
@@ -48,4 +50,5 @@ target_include_directories(PorusCpp PRIVATE
     ${CMAKE_SOURCE_DIR}/src/Pages
     ${CMAKE_SOURCE_DIR}/src/resources
     ${CMAKE_SOURCE_DIR}/src/Algorithm
+    ${CMAKE_SOURCE_DIR}/src/Components
 )

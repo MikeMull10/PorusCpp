@@ -46,7 +46,7 @@ ImageViewer::ImageViewer(QWidget* parent) : QWidget(parent) {
 ImageViewer::ImageViewer(ImageToolbar* toolbar, QWidget* parent) : ImageViewer(parent) {
     this->toolbar = toolbar;
     connect(this->toolbar, &ImageToolbar::toolActivated, this, &ImageViewer::onToolSwitch);
-    if (this->toolbar->getBtn("RESET_ZOOM")) (this->toolbar->getBtn("RESET_ZOOM"), &ToolButton::clicked, this, &ImageViewer::resetZoom);
+    if (this->toolbar->getBtn("RESET_ZOOM")) connect(this->toolbar->getBtn("RESET_ZOOM"), &ToolButton::clicked, this, &ImageViewer::resetZoom);
 }
 
 void ImageViewer::loadImage(const QPixmap &pixmap) {
@@ -100,8 +100,7 @@ void ImageViewer::onToolSwitch(TOOL tool) {
 QGraphicsPixmapItem* ImageViewer::getImage() const { return this->currentImage; }
 QRectF ImageViewer::getCrop() const { return this->cropOverlay->getCropRect(); }
 
-bool ImageViewer::eventFilter(QObject* obj, QEvent* event)
-{
+bool ImageViewer::eventFilter(QObject* obj, QEvent* event) {
     if (!toolbar || currentTool == TOOL::NONE)
         return QWidget::eventFilter(obj, event);
 

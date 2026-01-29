@@ -29,6 +29,15 @@
     margin-right: 10px;
 }
 
+#PushButton {
+    border: 2px solid #2d2d2d;
+    border-radius: 5px;
+}
+
+#PushButton:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
 QPushButton#TaskButton {
    background-color: transparent;
    border-left: 2px solid transparent;

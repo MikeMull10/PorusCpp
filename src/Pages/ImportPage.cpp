@@ -1,12 +1,13 @@
 #include "ImportPage.h"
 #include "SubtitleLabel.h"
 #include "Algorithm.h"
-#include <QShortcut>
 
+#include <opencv2/core.hpp>
+#include <QShortcut>
 #include <QSpinBox>
 
 ImportPage::ImportPage(QWidget* parent) : QWidget(parent) {
-    setObjectName("ImagePage");
+    this->setObjectName("ImagePage");
     this->mainLayout = new QHBoxLayout(this);
     this->settingsLayout = new QVBoxLayout();
     this->viewLayout = new QVBoxLayout();
@@ -21,20 +22,29 @@ ImportPage::ImportPage(QWidget* parent) : QWidget(parent) {
     // Show Background Button
     this->showBackgroundBtn = new ToolButton(QIcon(":/icons/background-white.svg"), this);
     showBackgroundBtn->setScale(1.5f);
+    showBackgroundBtn->setToolTip("Show Background (B)");
     toolbarLayout->addWidget(this->showBackgroundBtn);
     connect(this->showBackgroundBtn, &ToolButton::clicked, this, [this]() { this->showBackgroundBtn->flipActive(); this->updateImage(); });
     QShortcut* keyB = new QShortcut(QKeySequence(Qt::Key_B), this);
     connect(keyB, &QShortcut::activated, this, [this]() { this->showBackgroundBtn->flipActive(); this->updateImage(); });
 
     // Outline Opacity
-    QSlider* opacitySlider = new QSlider(Qt::Horizontal, this);
-    opacitySlider->setRange(0, 100);
-    opacitySlider->setValue(100);
-    opacitySlider->setMaximumWidth(100);
-    opacitySlider->setCursor(Qt::PointingHandCursor);
-    opacitySlider->setToolTip(QString("Outlines Opacity: %1%").arg(opacitySlider->value()));
-    connect(opacitySlider, &QSlider::valueChanged, this, [this, opacitySlider]() { this->updateImage(); opacitySlider->setToolTip(QString("Outlines Opacity: %1%").arg(opacitySlider->value())); });
-    toolbarLayout->addWidget(opacitySlider);
+    this->opacitySlider = new QSlider(Qt::Horizontal, this);
+    this->opacitySlider->setRange(0, 100);
+    this->opacitySlider->setValue(100);
+    this->opacitySlider->setMaximumWidth(100);
+    this->opacitySlider->setCursor(Qt::PointingHandCursor);
+    this->opacitySlider->setToolTip(QString("Outline Opacity: %1%").arg(this->opacitySlider->value()));
+    toolbarLayout->addWidget(this->opacitySlider);
+
+    QSpinBox* opacityBox = new QSpinBox(this);
+    opacityBox->setRange(0, 100);
+    opacityBox->setValue(this->opacitySlider->value());
+    opacityBox->setButtonSymbols(QAbstractSpinBox::NoButtons);
+    toolbarLayout->addWidget(opacityBox);
+
+    connect(this->opacitySlider, &QSlider::valueChanged, this, [this, opacityBox]() { this->updateImage(); this->opacitySlider->setToolTip(QString("Outline Opacity: %1%").arg(this->opacitySlider->value())); opacityBox->setValue(this->opacitySlider->value()); });
+    connect(opacityBox, &QSpinBox::valueChanged, this, [this](int value) { this->opacitySlider->setValue(value); this->opacitySlider->setToolTip(QString("Outline Opacity: %1%").arg(value)); this->updateImage(); });
 
     this->imageViewer = new ImageViewer(this->toolbar, this);
     this->viewLayout->addWidget(this->imageViewer);
@@ -60,21 +70,21 @@ void ImportPage::setup() {
     
     // Extract the cropped region from the original pixmap
     QPixmap originalPixmap = baseImage->pixmap();
-    QPixmap croppedPixmap = originalPixmap.copy(intersection.toRect());
+    this->croppedPixmap = originalPixmap.copy(intersection.toRect());
     
-    this->imageViewer->loadImage(croppedPixmap);
+    this->imageViewer->loadImage(this->croppedPixmap);
 }
 
 void ImportPage::setupSliders() {
-    this->addSlider("Brightness",   0, -150, 150);
-    this->addSlider("Contrast",     0, -100, 100);
-    this->addSlider("Min Value",    0,    0, 255);
-    this->addSlider("Max Value",    255,  0, 255);
-    this->addSlider("Denoise",      0,    0, 10);
-    this->addSlider("Blur",         1,    0, 10);
-    this->addSlider("Canny Low",    50,   0, 255);
-    this->addSlider("Canny High",   150,  0, 255);
-    this->addSlider("Expand Edges", 0,    0, 2);
+    this->addSlider("Brightness",   0, -150, 150);  // 0
+    this->addSlider("Contrast",     2, -100, 100);  // 0
+    this->addSlider("Min Value",    85,   0, 255);  // 0
+    this->addSlider("Max Value",    102,  0, 255);  // 255
+    this->addSlider("Denoise",      0,    0, 10);   // 0
+    this->addSlider("Blur",         2,    0, 10);   // 1
+    this->addSlider("Canny Low",    91,   0, 255);  // 50
+    this->addSlider("Canny High",   144,  0, 255);  // 150
+    this->addSlider("Expand Edges", 2,    0, 2);    // 0
 
     for (const auto& [key, value] : this->sliders) {
         connect(value, &QSlider::valueChanged, this, [this]() { this->updateImage(); });
@@ -97,7 +107,8 @@ void ImportPage::updateImage() {
                               this->sliders["Denoise"]->value(),
                               this->sliders["Expand Edges"]->value(),
                               this->outlineColor,
-                              this->showBackgroundBtn->property("active") == "true"
+                              this->showBackgroundBtn->property("active") == "true",
+                              this->opacitySlider->value() / 100.0f
                             );
     
     QPixmap pix = Algorithm::matToPixmap(edges);
@@ -154,9 +165,32 @@ void ImportPage::setColor(QColor qcolor) {
 
 void ImportPage::setBaseImage(QGraphicsPixmapItem* image) { this->baseImage = image; }
 QGraphicsPixmapItem* ImportPage::getBaseImage() const { return this->baseImage; }
+QPixmap ImportPage::getCroppedPixmap() const { return this->croppedPixmap; }
 
 void ImportPage::setCrop(QRectF crop) { this->crop = crop; }
 QRectF ImportPage::getCrop() const { return this->crop; }
 
 QVBoxLayout* ImportPage::getSettingsLayout() const { return this->settingsLayout; }
 QVBoxLayout* ImportPage::getViewLayout() const { return this->viewLayout; }
+PushButton* ImportPage::getSendBtn() const { return this->sendBtn; }
+std::vector<std::vector<cv::Point>> ImportPage::getCannyData() {
+    QPixmap img = this->imageViewer->getCurrentImage();
+
+    cv::Mat matImg = Algorithm::pixmapToGrayMat(img);
+    cv::Mat edges = Algorithm::canny(matImg,
+                              this->sliders["Brightness"]->value(),
+                              this->sliders["Contrast"]->value(),
+                              this->sliders["Min Value"]->value(),
+                              this->sliders["Max Value"]->value(),
+                              this->sliders["Blur"]->value(),
+                              this->sliders["Canny Low"]->value(),
+                              this->sliders["Canny High"]->value(),
+                              this->sliders["Denoise"]->value(),
+                              this->sliders["Expand Edges"]->value(),
+                              cv::Vec3b(255, 255, 255),
+                              false,
+                              1.0f
+                            );
+    
+    return Algorithm::getContours(edges);
+}

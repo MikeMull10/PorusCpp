@@ -17,6 +17,7 @@ class Taskbar : public QWidget {
     QVBoxLayout* bottom;
 
     TaskButton* menuBtn;
+    TaskButton* settingsBtn;
     bool extended{ true };
 
     QPropertyAnimation* widthAnimation = nullptr;
@@ -27,4 +28,6 @@ public:
     void updateWidth();
     void addTaskButton(TaskButton* btn, POSITION pos = TOP);
     void addWidget(QWidget* widget, POSITION pos = TOP);
+
+    TaskButton* getSettingsBtn() const;
 };

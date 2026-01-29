@@ -22,6 +22,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     // Settings
     this->settings = new QSettings("Porus", "PorusApp", this);
     this->initSettings();
+    this->settingsPopup = new SettingsPopup(this->settings, this);
+    connect(this->settingsPopup, &SettingsPopup::reloadQSS, this, [this]() {
+        this->updateStylesheet();
+        this->importPage->setColor(QColor(this->settings->value("outlineColor", "#ff0000").toString()));
+    });
 
     QWidget* centralWidget = new QWidget(this);
     this->mainLayout = new QHBoxLayout(centralWidget);
@@ -34,12 +39,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 
     TaskButton* openFileBtn = new TaskButton(QIcon(":/icons/open-file-white.svg"), "Open File", taskBar);
     taskBar->addTaskButton(openFileBtn);
-    connect(openFileBtn, &TaskButton::clicked, this, [this]() { this->openFile(); });
+    connect(openFileBtn, &TaskButton::clicked, this, &MainWindow::openFile);
+    connect(taskBar->getSettingsBtn(), &TaskButton::clicked, this, &MainWindow::createSettingsPopup);
 
     // Main content area on the right
     this->main = new QStackedWidget(centralWidget);
     this->importPage = new ImportPage(this);
+    this->editPage = new EditPage(this);
     this->main->addWidget(this->importPage);
+    this->main->addWidget(this->editPage);
     this->main->setCurrentWidget(this->importPage);
     this->importPage->setColor(QColor(this->settings->value("outlineColor", "#ff0000").toString()));
     
@@ -47,6 +55,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     
     setCentralWidget(centralWidget);
     this->updateStylesheet();
+
+    connect(this->importPage->getSendBtn(), &PushButton::clicked, this, [this]() {
+        QPixmap pix = this->importPage->getCroppedPixmap();
+        std::vector<std::vector<cv::Point>> points = this->importPage->getCannyData();
+        this->editPage->load(pix, points);
+        this->main->setCurrentIndex(1);
+    });
 
     // Page Buttons & Seperator
     QFrame* seperator = new QFrame(this);
@@ -57,6 +72,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     TaskButton* importPageBtn = new TaskButton(QIcon(":/icons/import-white.svg"), "Import Page", taskBar);
     taskBar->addTaskButton(importPageBtn);
     connect(importPageBtn, &TaskButton::clicked, this, [this]() { this->main->setCurrentIndex(0); });
+
+    TaskButton* editPageBtn = new TaskButton(QIcon(":/icons/import-white.svg"), "Edit Page", taskBar);
+    taskBar->addTaskButton(editPageBtn);
+    connect(editPageBtn, &TaskButton::clicked, this, [this]() { this->main->setCurrentIndex(1); });
 
     // --- Keybinds ---
     QShortcut* quitShortcut = new QShortcut(QKeySequence("Ctrl+Q"), this);
@@ -84,18 +103,17 @@ void MainWindow::initSettings() {
     QString theme = this->settings->value("theme", "light").toString();
     this->settings->setValue("theme", theme);
 
-    QString primary = this->settings->value("primary", "#ea00ff").toString();
+    QString primary = this->settings->value("primary", "#ff0000").toString();
     this->settings->setValue("primary", primary);
 
     QString recentDir = this->settings->value("recentDir", "").toString();
     this->settings->setValue("recentDir", recentDir);
 
-    QString outlineColor = this->settings->value("outlineColor", "#ea00ff").toString();
+    QString outlineColor = this->settings->value("outlineColor", "#ff0000").toString();
     this->settings->setValue("outlineColor", outlineColor);
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
-    // saveSettings();
     QMainWindow::closeEvent(event);
 }
 
@@ -128,3 +146,5 @@ void MainWindow::openFile() {
             break;
     }
 }
+
+void MainWindow::createSettingsPopup() { this->settingsPopup->exec(); }
