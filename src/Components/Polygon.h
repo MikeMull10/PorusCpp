@@ -18,13 +18,20 @@ private:
     bool editMode = false;
 
 public:
-    Polygon(bool closed = true);
+    Polygon(bool closed = false);
 
     // Polygon management
     void addPoint(const QPointF &point);
     void removeLastPoint();
     void clearPoints();
     void setPoints(const QPolygonF &points);
+
+    QPointF getPoint(int index) const;
+    int getClosestIndex(const QPointF& point) const;
+    int getNumPoints() const;
+
+    void insertPoint(int index, const QPointF &point);
+    void insertPointBetween(const QPointF &point);
     
     // Closed/Open state
     void setClosed(bool closed);

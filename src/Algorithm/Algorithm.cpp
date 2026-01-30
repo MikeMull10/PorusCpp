@@ -82,10 +82,7 @@ std::vector<std::vector<cv::Point>> Algorithm::getContours(const cv::Mat &image)
     }
     
     // Ensure single channel
-    if (img.channels() != 1) {
-        // qWarning() << "Failed to convert image to grayscale for contour detection";
-        return std::vector<std::vector<cv::Point>>();
-    }
+    if (img.channels() != 1) return std::vector<std::vector<cv::Point>>();
     
     // Apply threshold to create binary image (if not already binary)
     cv::Mat binary;

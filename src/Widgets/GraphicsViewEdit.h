@@ -25,6 +25,7 @@ class GraphicsViewEdit : public QGraphicsView {
     Q_OBJECT
 
     ImageTools* currentTool{ nullptr };
+    std::vector<Polygon*> selection;
     
 public:
     explicit GraphicsViewEdit(QGraphicsScene* scene, QWidget* parent = nullptr, ImageTools* currentTool = nullptr);

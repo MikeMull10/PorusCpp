@@ -1,17 +1,21 @@
 #include "Polygon.h"
 #include <QGraphicsDropShadowEffect>
+#include <QLineF>
+
+qreal distanceToLineSegment(const QPointF &p, const QPointF &a, const QPointF &b);
 
 Polygon::Polygon(bool closed) : QGraphicsPolygonItem(), isClosed(closed) {
-    edgePen = QPen(Qt::blue, 2);
-    fillBrush = QBrush(Qt::transparent);
-    setFlag(QGraphicsItem::ItemIsSelectable, true);
-    setFlag(QGraphicsItem::ItemIsMovable, true);
+    this->edgePen = QPen(Qt::red, 0.5);
+    this->fillBrush = QBrush(QColor(255, 0, 0, 120));
+    this->setFlag(QGraphicsItem::ItemIsSelectable, true);
+    this->setFlag(QGraphicsItem::ItemIsMovable, false);
 }
 
 void Polygon::addPoint(const QPointF &point) {
     prepareGeometryChange();
     QPolygonF poly = polygon();
     poly << point;
+    this->isClosed = point == this->getPoint(0);
     setPolygon(poly);
     update();
 }
@@ -36,6 +40,62 @@ void Polygon::setPoints(const QPolygonF &points) {
     prepareGeometryChange();
     setPolygon(points);
     update();
+}
+
+QPointF Polygon::getPoint(int index) const {
+    QPolygonF poly = polygon();
+    if (index >= 0 && index < poly.size()) return poly.at(index);
+    return QPointF();
+}
+
+int Polygon::getClosestIndex(const QPointF& point) const {
+    int index{ -1 };
+    qreal closestDistance = INFINITY;
+    QPolygonF poly = polygon();
+
+    for (int i = 0; i < poly.size(); i++) {
+        qreal dist = QLineF(point, poly.at(i)).length();
+        if (dist < closestDistance) {
+            closestDistance = dist;
+            index = i;
+        }
+    }
+
+    return index;
+}
+
+int Polygon::getNumPoints() const { return polygon().size(); }
+
+void Polygon::insertPoint(int index, const QPointF &point) {
+    prepareGeometryChange();
+    QPolygonF poly = polygon();  // Get copy
+    poly.insert(index, point);   // Insert at index
+    setPolygon(poly);            // Set back
+    update();
+}
+
+void Polygon::insertPointBetween(const QPointF &point) {
+    int numPoints = this->getNumPoints();
+    if (numPoints < 3) return;
+
+    qreal minDist = std::numeric_limits<qreal>::max();
+    int insertIndex = -1;
+    
+    // Check all edges
+    for (int i = 0; i < numPoints; ++i) {
+        int next = (i + 1) % numPoints;
+        QPointF p1 = this->getPoint(i);
+        QPointF p2 = this->getPoint(next);
+        
+        qreal dist = distanceToLineSegment(point, p1, p2);
+        
+        if (dist < minDist) {
+            minDist = dist;
+            insertIndex = next;
+        }
+    }
+    
+    if (insertIndex >= 0) this->insertPoint(insertIndex, point);
 }
 
 void Polygon::setClosed(bool closed) {
@@ -103,7 +163,7 @@ void Polygon::updateHandleAppearance() {
             handle->setZValue(1000);  // Always on top
             
             // Optional: add glow
-            auto* glow = new QGraphicsDropShadowEffect();
+            QGraphicsDropShadowEffect* glow = new QGraphicsDropShadowEffect();
             glow->setBlurRadius(10);
             glow->setColor(Qt::yellow);
             glow->setOffset(0, 0);
@@ -132,4 +192,22 @@ QVariant Polygon::itemChange(GraphicsItemChange change, const QVariant &value) {
         }
     }
     return QGraphicsPolygonItem::itemChange(change, value);
+}
+
+qreal distanceToLineSegment(const QPointF &p, const QPointF &a, const QPointF &b) {
+    QPointF ab = b - a;
+    QPointF ap = p - a;
+    
+    qreal abLengthSquared = QPointF::dotProduct(ab, ab);
+    if (abLengthSquared == 0) {
+        // Line segment is actually a point
+        return QLineF(p, a).length();
+    }
+    
+    // Project point onto line segment
+    qreal t = QPointF::dotProduct(ap, ab) / abLengthSquared;
+    t = qBound(0.0, t, 1.0);  // Clamp to segment
+    
+    QPointF closest = a + t * ab;
+    return QLineF(p, closest).length();
 }
