@@ -67,7 +67,7 @@ QPixmap Algorithm::matToPixmap(const cv::Mat& mat) {
     return QPixmap::fromImage(img.copy());
 }
 
-std::vector<std::vector<cv::Point>> Algorithm::getContours(const cv::Mat &image) {
+std::vector<std::vector<cv::Point>> Algorithm::getContours(const cv::Mat &image, bool closeGaps, int gapClosingKernelSize) {
     if (image.empty()) {
         return std::vector<std::vector<cv::Point>>();
     }
@@ -87,6 +87,13 @@ std::vector<std::vector<cv::Point>> Algorithm::getContours(const cv::Mat &image)
     // Apply threshold to create binary image (if not already binary)
     cv::Mat binary;
     cv::threshold(img, binary, 127, 255, cv::THRESH_BINARY);
+    
+    // Close gaps if requested
+    if (closeGaps) {
+        cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, 
+                                                   cv::Size(gapClosingKernelSize, gapClosingKernelSize));
+        cv::morphologyEx(binary, binary, cv::MORPH_CLOSE, kernel);
+    }
     
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);

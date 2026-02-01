@@ -192,5 +192,5 @@ std::vector<std::vector<cv::Point>> ImportPage::getCannyData() {
                               1.0f
                             );
     
-    return Algorithm::getContours(edges);
+    return Algorithm::getContours(edges, true, 9);
 }

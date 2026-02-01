@@ -21,8 +21,9 @@ public:
     Polygon(bool closed = false);
 
     // Polygon management
-    void addPoint(const QPointF &point);
+    int addPoint(const QPointF &point);
     void removeLastPoint();
+    void removePoint(int index);
     void clearPoints();
     void setPoints(const QPolygonF &points);
 
@@ -31,7 +32,7 @@ public:
     int getNumPoints() const;
 
     void insertPoint(int index, const QPointF &point);
-    void insertPointBetween(const QPointF &point);
+    int insertPointBetween(const QPointF &point);
     
     // Closed/Open state
     void setClosed(bool closed);

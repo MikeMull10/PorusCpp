@@ -9,15 +9,20 @@ Polygon::Polygon(bool closed) : QGraphicsPolygonItem(), isClosed(closed) {
     this->fillBrush = QBrush(QColor(255, 0, 0, 120));
     this->setFlag(QGraphicsItem::ItemIsSelectable, true);
     this->setFlag(QGraphicsItem::ItemIsMovable, false);
+
+    if (this->getNumPoints() > 2) 
+        this->isClosed = this->getPoint(0) == this->getPoint(this->getNumPoints() - 1);
+    // isClosed = true;    
 }
 
-void Polygon::addPoint(const QPointF &point) {
-    prepareGeometryChange();
+int Polygon::addPoint(const QPointF &point) {
+    this->prepareGeometryChange();
     QPolygonF poly = polygon();
     poly << point;
     this->isClosed = point == this->getPoint(0);
-    setPolygon(poly);
-    update();
+    this->setPolygon(poly);
+    this->update();
+    return poly.size() - 1;
 }
 
 void Polygon::removeLastPoint() {
@@ -28,6 +33,17 @@ void Polygon::removeLastPoint() {
         setPolygon(poly);
     }
     update();
+}
+
+void Polygon::removePoint(int index) {
+    this->prepareGeometryChange();
+    QPolygonF poly = polygon();
+    if (!poly.isEmpty()) {
+        poly.removeAt(index);
+        this->setPolygon(poly);
+    }
+    this->isClosed = this->getPoint(0) == this->getPoint(poly.size() - 1);
+    this->update();
 }
 
 void Polygon::clearPoints() {
@@ -71,12 +87,13 @@ void Polygon::insertPoint(int index, const QPointF &point) {
     QPolygonF poly = polygon();  // Get copy
     poly.insert(index, point);   // Insert at index
     setPolygon(poly);            // Set back
+    this->isClosed = this->getPoint(0) == this->getPoint(poly.size() - 1);
     update();
 }
 
-void Polygon::insertPointBetween(const QPointF &point) {
+int Polygon::insertPointBetween(const QPointF &point) {
     int numPoints = this->getNumPoints();
-    if (numPoints < 3) return;
+    if (numPoints < 3) return -1;
 
     qreal minDist = std::numeric_limits<qreal>::max();
     int insertIndex = -1;
@@ -96,6 +113,8 @@ void Polygon::insertPointBetween(const QPointF &point) {
     }
     
     if (insertIndex >= 0) this->insertPoint(insertIndex, point);
+    
+    return insertIndex;
 }
 
 void Polygon::setClosed(bool closed) {

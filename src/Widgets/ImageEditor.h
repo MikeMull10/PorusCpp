@@ -3,6 +3,7 @@
 #include "GraphicsViewEdit.h"
 #include "TaskButton.h"
 #include "Polygon.h"
+#include "HistoryOptions.h"
 
 #include <QGraphicsScene>
 #include <QGraphicsPixmapItem>
@@ -27,8 +28,8 @@ class ImageEditor : public QWidget {
     std::vector<Polygon*> polygons;
     
     static constexpr uint8_t MAX_STACK_SIZE{ 20 };
-    std::stack<int> undoStack;
-    std::stack<int> redoStack;
+    std::stack<History*> undoStack;
+    std::stack<History*> redoStack;
 
 public:
     explicit ImageEditor(QWidget* parent = nullptr);

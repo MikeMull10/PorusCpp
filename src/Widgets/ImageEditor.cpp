@@ -9,6 +9,7 @@ ImageEditor::ImageEditor(QWidget* parent) : QWidget(parent) {
 
     this->scene = new QGraphicsScene(this);
     this->view = new GraphicsViewEdit(this->scene, this, &this->currentTool);
+    this->view->setHistories(&this->undoStack, &this->redoStack);
     this->view->setMouseTracking(true);
     this->view->viewport()->setMouseTracking(true);
     this->view->setFocusPolicy(Qt::StrongFocus);
@@ -27,10 +28,6 @@ ImageEditor::ImageEditor(QWidget* parent) : QWidget(parent) {
     this->layout->addWidget(this->view);
     this->initToolbar();
 
-    QShortcut *undoShortcut = new QShortcut(QKeySequence("Ctrl+Z"), this);
-    connect(undoShortcut, &QShortcut::activated, this, &ImageEditor::undo);
-    QShortcut *redoShortcut = new QShortcut(QKeySequence("Ctrl+Y"), this);
-    connect(redoShortcut, &QShortcut::activated, this, &ImageEditor::redo);
     QShortcut* resetZoomShortcut = new QShortcut(QKeySequence("Ctrl+0"), this);
     connect(resetZoomShortcut, &QShortcut::activated, this, &ImageEditor::resetZoom);
 }
@@ -133,6 +130,8 @@ void ImageEditor::initToolbar() {
     QShortcut *redoShort = new QShortcut(QKeySequence("Ctrl+Y"), this);
     connect(undoShort, &QShortcut::activated, this, &ImageEditor::undo);
     connect(redoShort, &QShortcut::activated, this, &ImageEditor::redo);
+    connect(undoBtn, &ToolButton::clicked, this, &ImageEditor::undo);
+    connect(redoBtn, &ToolButton::clicked, this, &ImageEditor::redo);
 
     for (ToolButton *btn : toolBtns) { this->toolbarLayout->addWidget(btn); btn->setScale(1.25f); }
     this->toolbarLayout->addWidget(undoBtn);
@@ -145,37 +144,13 @@ void ImageEditor::setActiveTool(ToolButton *active) {
     for (ToolButton *btn : this->toolBtns) btn->setActive(false);
     active->setActive(true);
 
-    switch (this->currentTool) {
-        case ImageTools::HAND:
-            setCursor(Qt::OpenHandCursor);
-            break;
-        case ImageTools::ZOOM:
-            setCursor(Qt::CrossCursor);
-            break;
-        case ImageTools::ADD_POINT:
-        case ImageTools::ADD_POINTS_FOLLOW:
-            setCursor(Qt::CrossCursor);
-            break;
-        case ImageTools::DELETE_POINT:
-        case ImageTools::DELETE_POLYGON:
-            setCursor(Qt::PointingHandCursor);
-            break;
-        case ImageTools::MOVE_POINT:
-            setCursor(Qt::SizeAllCursor);
-            break;
-        case ImageTools::SELECT_POINT:
-        case ImageTools::SELECT_RECT:
-        case ImageTools::SELECT_LASSO:
-            setCursor(Qt::ArrowCursor);
-            break;
-        default:
-            setCursor(Qt::ArrowCursor);
-    }
+    this->view->updateCursor();
 }
 
 void ImageEditor::loadImage(const QPixmap &pixmap) {
-    undoStack = std::stack<int>();
-    redoStack = std::stack<int>();
+    while (!undoStack.empty()) undoStack.pop();
+    while (!redoStack.empty()) redoStack.pop();
+    this->view->clearSelection();
 
     if (this->image) {
         this->scene->removeItem(this->image);
@@ -227,8 +202,23 @@ void ImageEditor::loadContours(std::vector<std::vector<cv::Point>> contours) {
     }
 }
 
-void ImageEditor::undo() {}
-void ImageEditor::redo() {}
+void ImageEditor::undo() {
+    if (undoStack.empty()) return;
+
+    History* action = undoStack.top();
+    undoStack.pop();
+    action->doAction();
+    redoStack.push(action->getInverse());
+}
+
+void ImageEditor::redo() {
+    if (redoStack.empty()) return;
+
+    History* action = redoStack.top();
+    redoStack.pop();
+    action->doAction();
+    undoStack.push(action->getInverse());
+}
 
 void ImageEditor::resetZoom() {
     if (!this->image) return;
