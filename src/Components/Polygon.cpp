@@ -1,18 +1,21 @@
 #include "Polygon.h"
+#include "CloseGap.h"
+
 #include <QGraphicsDropShadowEffect>
+#include <QGraphicsScene>
 #include <QLineF>
 
 qreal distanceToLineSegment(const QPointF &p, const QPointF &a, const QPointF &b);
+bool isValidClosure(const QPolygonF&);
+double calculatePolygonArea(const QPolygonF&);
+QPolygonF calculateConvexHull(const QPolygonF&);
 
-Polygon::Polygon(bool closed) : QGraphicsPolygonItem(), isClosed(closed) {
+Polygon::Polygon(QGraphicsScene* scene) : QGraphicsPolygonItem() {
+    this->scene = scene;
     this->edgePen = QPen(Qt::red, 0.5);
     this->fillBrush = QBrush(QColor(255, 0, 0, 120));
     this->setFlag(QGraphicsItem::ItemIsSelectable, true);
     this->setFlag(QGraphicsItem::ItemIsMovable, false);
-
-    if (this->getNumPoints() > 2) 
-        this->isClosed = this->getPoint(0) == this->getPoint(this->getNumPoints() - 1);
-    // isClosed = true;    
 }
 
 int Polygon::addPoint(const QPointF &point) {
@@ -21,6 +24,7 @@ int Polygon::addPoint(const QPointF &point) {
     poly << point;
     this->isClosed = point == this->getPoint(0);
     this->setPolygon(poly);
+    this->updatePointsItems();
     this->update();
     return poly.size() - 1;
 }
@@ -32,6 +36,7 @@ void Polygon::removeLastPoint() {
         poly.pop_back();
         setPolygon(poly);
     }
+    this->updatePointsItems();
     update();
 }
 
@@ -43,6 +48,7 @@ void Polygon::removePoint(int index) {
         this->setPolygon(poly);
     }
     this->isClosed = this->getPoint(0) == this->getPoint(poly.size() - 1);
+    this->updatePointsItems();
     this->update();
 }
 
@@ -54,7 +60,28 @@ void Polygon::clearPoints() {
 
 void Polygon::setPoints(const QPolygonF &points) {
     prepareGeometryChange();
-    setPolygon(points);
+
+    QPolygonF newPoints = points;
+
+    if (newPoints.size() > 2) {
+        QPointF p1 = newPoints.at(0);
+        QPointF p2 = newPoints.at(newPoints.size() - 1);
+        double distance = QLineF(p1, p2).length();
+        this->isClosed = distance <= 1.0f;
+        
+        if (this->isClosed) {
+            newPoints.pop_back();
+            newPoints.append(points.first());
+
+            if (!isValidClosure(newPoints)) {
+                this->edgePen = QPen(Qt::blue, 0.5);
+                this->fillBrush = QBrush(QColor(0, 0, 255, 120));
+                newPoints = closePolygon(newPoints);
+            }
+        }
+    }
+    this->updatePointsItems();
+    setPolygon(newPoints);
     update();
 }
 
@@ -88,6 +115,7 @@ void Polygon::insertPoint(int index, const QPointF &point) {
     poly.insert(index, point);   // Insert at index
     setPolygon(poly);            // Set back
     this->isClosed = this->getPoint(0) == this->getPoint(poly.size() - 1);
+    this->updatePointsItems();
     update();
 }
 
@@ -123,17 +151,18 @@ void Polygon::setClosed(bool closed) {
         update();
     }
 }
-
 bool Polygon::isClosedPolygon() const { return this->isClosed; }
 
-void Polygon::setSelected(bool selected) { this->isSelected = selected; }
+void Polygon::setSelected(bool selected) {
+    this->isSelected = selected;
+    this->updatePointsItems();
+}
 bool Polygon::getIsSelected() const { return this->isSelected; }
 
 void Polygon::setEdgePen(const QPen &pen) {
     edgePen = pen;
     update();
 }
-
 void Polygon::setFillBrush(const QBrush &brush) {
     fillBrush = brush;
     update();
@@ -172,46 +201,33 @@ QRectF Polygon::boundingRect() const {
     return poly.boundingRect().adjusted(-penWidth, -penWidth, penWidth, penWidth);
 }
 
-void Polygon::updateHandleAppearance() {
-    for (PointHandle* handle : handles) {
-        if (this->isSelected) {
-            // Highly visible for selected polygon
-            handle->setBrush(QBrush(QColor(255, 200, 0)));  // Bright yellow/orange
-            handle->setPen(QPen(Qt::black, 3));  // Strong contrast
-            handle->setRect(-6, -6, 12, 12);  // Larger
-            handle->setZValue(1000);  // Always on top
-            
-            // Optional: add glow
-            QGraphicsDropShadowEffect* glow = new QGraphicsDropShadowEffect();
-            glow->setBlurRadius(10);
-            glow->setColor(Qt::yellow);
-            glow->setOffset(0, 0);
-            handle->setGraphicsEffect(glow);
-        } else {
-            // Subtle for unselected polygon
-            handle->setBrush(QBrush(QColor(100, 150, 255, 180)));
-            handle->setPen(QPen(Qt::white, 1));
-            handle->setRect(-4, -4, 8, 8);
-            handle->setZValue(10);
-            handle->setGraphicsEffect(nullptr);  // Remove glow
-        }
+void Polygon::updatePointsItems() {
+    for (QGraphicsEllipseItem* item : this->pointItems) delete item;
+    this->pointItems.clear();
+    if (!this->isSelected) return;
+
+    QPolygonF poly = polygon();
+    
+    const qreal r = 0.25f;  // radius
+
+    for (int i = 0; i < poly.size(); ++i) {
+        const QPointF& p = poly[i];
+
+        QGraphicsEllipseItem* item = this->scene->addEllipse(
+            -r, -r, 2*r, 2*r,
+            QPen(Qt::white),
+            QBrush(Qt::black)
+        );
+        item->setZValue(10);
+
+        // Position in scene coordinates
+        item->setPos(p);
+
+        this->pointItems.push_back(item);
     }
 }
 
-QVariant Polygon::itemChange(GraphicsItemChange change, const QVariant &value) {
-    if (change == ItemSelectedHasChanged) {
-        if (value.toBool()) {
-            // Selected - create handles
-            editMode = true;
-            // createHandles();
-        } else {
-            // Deselected - remove handles
-            editMode = false;
-            // clearHandles();
-        }
-    }
-    return QGraphicsPolygonItem::itemChange(change, value);
-}
+qreal Polygon::getArea() const { return calculatePolygonArea(polygon()); }
 
 qreal distanceToLineSegment(const QPointF &p, const QPointF &a, const QPointF &b) {
     QPointF ab = b - a;
@@ -229,4 +245,89 @@ qreal distanceToLineSegment(const QPointF &p, const QPointF &a, const QPointF &b
     
     QPointF closest = a + t * ab;
     return QLineF(p, closest).length();
+}
+
+bool isValidClosure(const QPolygonF& polygon) {
+    if (polygon.size() < 3) return false;
+    
+    // Ensure polygon is closed
+    QPolygonF closed = polygon;
+    if (closed.first() != closed.last()) {
+        closed.append(closed.first());
+    }
+    
+    // Calculate actual polygon area
+    double actualArea = calculatePolygonArea(closed);
+    
+    // Calculate convex hull
+    QPolygonF hull = calculateConvexHull(closed);
+    double hullArea = calculatePolygonArea(hull);
+    
+    // Solidity
+    double solidity = actualArea / (hullArea + 1e-6);
+    
+    return solidity > 0.35;
+}
+
+double calculatePolygonArea(const QPolygonF& polygon) {
+    if (polygon.size() < 3) return 0.0;
+    
+    double area = 0.0;
+    int n = polygon.size();
+    
+    for (int i = 0; i < n; i++) {
+        int j = (i + 1) % n;
+        area += polygon[i].x() * polygon[j].y();
+        area -= polygon[j].x() * polygon[i].y();
+    }
+    
+    return std::abs(area) / 2.0;
+}
+
+QPolygonF calculateConvexHull(const QPolygonF& polygon) {
+    if (polygon.size() < 3) return polygon;
+    
+    // Convert to std::vector for easier manipulation
+    std::vector<QPointF> points;
+    for (int i = 0; i < polygon.size(); i++) {
+        points.push_back(polygon.at(i));
+    }
+    
+    // Sort points by x, then y
+    std::sort(points.begin(), points.end(), [](const QPointF& a, const QPointF& b) {
+        return a.x() < b.x() || (a.x() == b.x() && a.y() < b.y());
+    });
+    
+    // Andrew's monotone chain algorithm
+    auto cross = [](const QPointF& O, const QPointF& A, const QPointF& B) {
+        return (A.x() - O.x()) * (B.y() - O.y()) - (A.y() - O.y()) * (B.x() - O.x());
+    };
+    
+    std::vector<QPointF> hull;
+    
+    // Build lower hull
+    for (const auto& p : points) {
+        while (hull.size() >= 2 && cross(hull[hull.size()-2], hull[hull.size()-1], p) <= 0) {
+            hull.pop_back();
+        }
+        hull.push_back(p);
+    }
+    
+    // Build upper hull
+    size_t lowerSize = hull.size();
+    for (int i = points.size() - 2; i >= 0; i--) {
+        while (hull.size() > lowerSize && cross(hull[hull.size()-2], hull[hull.size()-1], points[i]) <= 0) {
+            hull.pop_back();
+        }
+        hull.push_back(points[i]);
+    }
+    
+    hull.pop_back(); // Remove duplicate point
+
+    QPolygonF ret;
+    for (int i = 0; i < hull.size(); i++) {
+        ret.append(hull.at(i));
+    }
+    
+    return ret;
 }

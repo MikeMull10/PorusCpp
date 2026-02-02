@@ -80,7 +80,7 @@ void GraphicsViewEdit::mousePressEvent(QMouseEvent* event) {
             } else {                                         // CREATE & ADD POINT TO POLYGON
                 if (event->button() != Qt::LeftButton) return;
 
-                poly = new Polygon();
+                poly = new Polygon(this->scene());
                 poly->setSelected(true);
                 index = poly->addPoint(scenePos);
                 this->selection.push_back(poly);
@@ -92,6 +92,7 @@ void GraphicsViewEdit::mousePressEvent(QMouseEvent* event) {
         }
         
         case ImageTools::DELETE_POLYGON: {
+            for (Polygon* p : this->selection) p->setSelected(false);
             this->selection.clear();
             QGraphicsItem* item = scene()->itemAt(scenePos, transform());
         
@@ -104,10 +105,12 @@ void GraphicsViewEdit::mousePressEvent(QMouseEvent* event) {
         }
 
         case ImageTools::SELECT_POINT: {
+            for (Polygon* p : this->selection) p->setSelected(false);
             this->selection.clear();
             QGraphicsItem* item = scene()->itemAt(scenePos, transform());
             Polygon* poly = dynamic_cast<Polygon*>(item);
             if (!poly) return;
+            poly->setSelected(true);
             this->selection.push_back(poly);
         }
     }

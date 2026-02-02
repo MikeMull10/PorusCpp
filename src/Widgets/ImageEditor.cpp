@@ -179,11 +179,9 @@ void ImageEditor::loadContours(std::vector<std::vector<cv::Point>> contours) {
     
     // Now add new polygons
     for (const std::vector<cv::Point> &contour : contours) {
-        if (contour.size() < 3) {
-            continue;  // Skip invalid contours
-        }
+        if (contour.size() < 3) continue;
         
-        Polygon* poly = new Polygon();
+        Polygon* poly = new Polygon(this->scene);
         
         // Build QPolygonF and set all points at once
         QPolygonF qPoly;
@@ -194,8 +192,8 @@ void ImageEditor::loadContours(std::vector<std::vector<cv::Point>> contours) {
         }
         
         poly->setPoints(qPoly);
-        poly->setEdgePen(QPen(Qt::red, 0.5));
-        poly->setFillBrush(QBrush(QColor(255, 0, 0, 120)));
+
+        if (poly->getNumPoints() < 3 || poly->getArea() <= 1.0f) continue;
         
         this->polygons.push_back(poly);
         this->scene->addItem(poly);

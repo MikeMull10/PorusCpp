@@ -1,11 +1,11 @@
 #pragma once
 
-#include "PointHandle.h"
-
+#include <QGraphicsEllipseItem>
 #include <QGraphicsPolygonItem>
 #include <QGraphicsPathItem>
 #include <QPainter>
 #include <QPainterPath>
+#include <vector>
 
 class Polygon : public QGraphicsPolygonItem {
 private:
@@ -14,11 +14,11 @@ private:
     QPen edgePen;
     QBrush fillBrush;
     
-    QList<PointHandle*> handles;
-    bool editMode = false;
+    QGraphicsScene* scene;
+    std::vector<QGraphicsEllipseItem*> pointItems;
 
 public:
-    Polygon(bool closed = false);
+    Polygon(QGraphicsScene*);
 
     // Polygon management
     int addPoint(const QPointF &point);
@@ -53,8 +53,7 @@ public:
     // Bounding rect
     QRectF boundingRect() const override;
 
-    void updateHandleAppearance();
+    void updatePointsItems();
 
-protected:
-    QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+    qreal getArea() const;
 };

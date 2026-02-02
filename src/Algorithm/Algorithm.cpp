@@ -2,6 +2,12 @@
 
 #include <opencv2/highgui.hpp>
 
+bool lineSegmentsIntersect(const cv::Point& p1, const cv::Point& p2,
+                          const cv::Point& p3, const cv::Point& p4);
+
+bool lineIntersectsContour(const cv::Point& p1, const cv::Point& p2,
+                          const std::vector<cv::Point>& contour);
+
 cv::Mat Algorithm::pixmapToGrayMat(const QPixmap &pixmap) {
     QImage img = pixmap.toImage().convertToFormat(QImage::Format_RGBA8888);
 
@@ -89,7 +95,7 @@ std::vector<std::vector<cv::Point>> Algorithm::getContours(const cv::Mat &image,
     cv::threshold(img, binary, 127, 255, cv::THRESH_BINARY);
     
     // Close gaps if requested
-    if (closeGaps) {
+    if (closeGaps && gapClosingKernelSize > 0) {
         cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, 
                                                    cv::Size(gapClosingKernelSize, gapClosingKernelSize));
         cv::morphologyEx(binary, binary, cv::MORPH_CLOSE, kernel);
@@ -97,6 +103,16 @@ std::vector<std::vector<cv::Point>> Algorithm::getContours(const cv::Mat &image,
     
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(binary, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+
+    cv::Point p1, p2;
+    for (std::vector<cv::Point>& contour : contours) {
+        p1 = contour.at(0);
+        p2 = contour.at(contour.size() - 1);
+
+        if (!lineIntersectsContour(p1, p2, contour)) {
+            contour.push_back(p1);
+        }
+    }
 
     return contours;
 }
@@ -159,4 +175,25 @@ cv::Mat Algorithm::canny(const cv::Mat &image, int brightness, int contrast, int
 
     resultF.convertTo(result, CV_8UC3);
     return result;
+}
+
+bool lineSegmentsIntersect(const cv::Point& p1, const cv::Point& p2,
+                          const cv::Point& p3, const cv::Point& p4) {
+    auto ccw = [](const cv::Point& A, const cv::Point& B, const cv::Point& C) {
+        return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x);
+    };
+    
+    return ccw(p1, p3, p4) != ccw(p2, p3, p4) && 
+           ccw(p1, p2, p3) != ccw(p1, p2, p4);
+}
+
+bool lineIntersectsContour(const cv::Point& p1, const cv::Point& p2,
+                          const std::vector<cv::Point>& contour) {
+    for (size_t i = 0; i < contour.size(); i++) {
+        size_t next = (i + 1) % contour.size();
+        if (lineSegmentsIntersect(p1, p2, contour[i], contour[next])) {
+            return true;
+        }
+    }
+    return false;
 }
